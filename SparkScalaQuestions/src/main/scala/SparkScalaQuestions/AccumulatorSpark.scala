@@ -2,7 +2,7 @@ package SparkScalaQuestions
 
 import org.apache.spark.{SparkConf, SparkContext}
 
-object AccumulateSpark {
+object AccumulatorSpark {
 
   val conf = new SparkConf().setAppName("Word Count").setMaster("local[*]")
   val sc = new SparkContext(conf)
