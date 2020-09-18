@@ -1,0 +1,426 @@
+https://www.w3resource.com/sql-exercises/sql-retrieve-from-table.php
+
+    A) SQL Retrieve data from tables
+
+    1. select * from salesman
+    2. SELECT 'This is SQL Exercise, Practice and Solution' as value;
+    3. SELECT 5,10,15
+    4. SELECT 15 + 20
+    5. SELECT (5 * 2) + 6
+    6. SELECT name,commision FROM SALESMAN
+    7. SELECT ord_date,salesman_id,ord_no,purch_amt FROM ORDERS
+    8. SELECT DISTINCT salesman_id from orders
+    9. SELECT name,city FROM SALESMAN WHERE lower(city) = 'paris'
+    10. SELECT * FROM CUSTOMER WHERE grade = 200
+    11. SELECT ord_no,ord_date,purch_amt FROM orders WHERE salesman_id = 5001
+    12. SELECT * FROM NOBEL_WIN
+    13. SELECT winner FROM NOBEL_WIN WHERE year = 1971 AND subject = 'Literature'
+    14. SELECT year,subject FROM NOBEL_WIN WHERE LOWER(winner) = 'dennis gabor'
+    15. SELECT winner FROM NOBEL_WIN WHERE LOWER(subject) = 'physics' AND year > 1950
+    16. SELECT * FROM NOBEL_WIN WHERE LOWER(subject) = 'chemistry' AND year >= 1965 and year <= 1975
+    17. SELECT * FROM NOBEL_WIN WHERE LOWER(winner) in ('menachem begin','yitzhak rabin') AND year > 1972
+    18. SELECT * FROM nobel_win WHERE winner LIKE 'Louis%';
+    19. SELECT * FROM nobel_win  WHERE (subject ='Physics' AND year=1970) UNION (SELECT * FROM nobel_win  WHERE (subject ='Economics' AND year=1971));
+    20. SELECT * FROM nobel_win  WHERE subject NOT IN ('Physiology','Economics') AND year = 1970 
+    21. SELECT * FROM nobel_win WHERE (subject ='Physiology' AND year<1971) UNION (SELECT * FROM nobel_win WHERE (subject ='Peace' AND year>=1974));
+    22. SELECT *  FROM nobel_win  WHERE winner='Johannes Georg Bednorz';
+    23. SELECT * FROM nobel_win  WHERE subject NOT LIKE 'P%' ORDER BY year DESC,winner
+    24. SELECT * FROM nobel_win WHERE year=1970  ORDER BY CASE WHEN subject IN ('Economics','Chemistry') THEN 1 ELSE 0 END ASC,subject,winner;
+    25. SELECT * FROM item_mast WHERE pro_price BETWEEN 200 AND 600;
+    26. SELECT * FROM item_mast WHERE pro_price BETWEEN 200 AND 600;
+    27.  SELECT pro_name as "Item Name", pro_price AS "Price in Rs." FROM item_mast;
+    28. SELECT pro_name, pro_price FROM item_mast WHERE pro_price >= 250 ORDER BY pro_price DESC, pro_name;
+    29. SELECT AVG(pro_price), pro_com FROM item_mast GROUP BY pro_com;
+    30. SELECT pro_name, pro_price FROM item_mast WHERE pro_price = (SELECT MIN(pro_price) FROM item_mast);
+    31. SELECT DISTINCT emp_lname FROM emp_details;
+    32. SELECT  *  FROM emp_details WHERE emp_lname= 'Snares';
+    33. SELECT  *  FROM emp_details  WHERE emp_dept= 57;
+
+
+
+
+
+B)  SQL Boolean and Relational operators
+
+    1. SELECT * FROM customer WHERE grade > 100;
+    2. SELECT * FROM customer  WHERE city = 'New York' AND grade>100;
+    3. SELECT * FROM customer WHERE city = 'New York' OR grade>100;
+    4. SELECT * FROM customer WHERE city = 'New York' OR NOT grade>100;
+    5. SELECT * FROM customer WHERE NOT (city = 'New York' OR grade>100);
+    6. SELECT * FROM  orders WHERE NOT ((ord_date ='2012-09-10' AND salesman_id>5005) OR purch_amt>1000.00);
+    7. SELECT salesman_id,name,city,commission FROM salesman WHERE (commission > 0.10 AND commission< 0.12);
+    8. SELECT * FROM  orders WHERE(purch_amt<200 OR NOT(ord_date>='2012-02-10' AND customer_id<3009));
+    9. SELECT * FROM  orders WHERE NOT((ord_date ='2012-08-17' OR customer_id>3005) AND purch_amt<1000);
+    10. SELECT ord_no,purch_amt, (100*purch_amt)/6000 AS "Achieved %", (100*(6000-purch_amt)/6000) AS "Unachieved %" FROM  orders WHERE (100*purch_amt)/6000>50;
+    11. SELECT *  FROM emp_details   WHERE emp_lname ='Dosni' OR emp_lname= 'Mardy';
+    12. SELECT *  FROM emp_details  WHERE emp_dept = 47 OR emp_dept = 63;
+
+C)  SQL Wildcard and Special operators
+
+    1. SELECT * FROM salesman WHERE city = 'Paris' OR city = 'Rome';
+    2. SELECT * FROM salesman WHERE city IN('Paris','Rome');
+    3. SELECT * FROM salesman WHERE city NOT IN('Paris','Rome');
+    4. SELECT * FROM customer WHERE customer_id IN (3007,3008,3009);
+    5. SELECT * FROM salesman WHERE commission BETWEEN 0.12 AND 0.14;
+    6. SELECT * FROM orders WHERE (purch_amt BETWEEN 500 AND 4000) AND NOT purch_amt IN(948.50,1983.43);
+    7. SELECT * FROM salesman WHERE name BETWEEN 'A' and 'K';
+    8. SELECT * FROM salesman WHERE name NOT BETWEEN 'A' and 'L';
+    9. SELECT * FROM customer WHERE cust_name LIKE 'B%';
+    10. SELECT *FROM customer WHERE cust_name LIKE '%n';
+    11. SELECT *  FROM salesman WHERE name LIKE 'N__l%';
+    12. SELECT * FROM testtable WHERE col1 LIKE '%/_%' ESCAPE '/';
+    13. SELECT * FROM testtable WHERE col1 NOT LIKE '%/_%' ESCAPE '/';
+    14. SELECT * FROM testtable WHERE col1 LIKE '%//%' ESCAPE '/';
+    15. SELECT * FROM testtable WHERE col1 NOT LIKE '%//%' ESCAPE '/';
+    16. SELECT * FROM testtable WHERE col1 LIKE '%/_//%' ESCAPE '/';
+    17. SELECT * FROM testtable WHERE col1 NOT LIKE '%/_//%' ESCAPE '/';
+    18. SELECT * FROM testtable WHERE col1 LIKE '%/%%' ESCAPE'/';
+    19. SELECT *FROM testtable WHERE col1 NOT LIKE '%/%%' ESCAPE'/';
+    20. SELECT * FROM customer WHERE grade IS NULL;
+    21. SELECT * FROM customer WHERE grade IS NOT NULL;
+    22. SELECT *  FROM emp_details WHERE emp_lname LIKE 'D%'; 
+
+D)  SQL Aggregate Functions [25 Exercises]
+
+    1. SELECT SUM (purch_amt)  FROM orders;
+    2. SELECT AVG (purch_amt)  FROM orders;
+    3. SELECT COUNT (DISTINCT salesman_id) FROM orders;
+    4. SELECT COUNT(cust_name) FROM customer WHERE cust_name is not null;
+    5. SELECT COUNT (ALL grade) FROM customer;
+    6. SELECT MAX (purch_amt) FROM orders;
+    7. SELECT MIN(purch_amt) FROM orders;
+    8. SELECT city,MAX(grade) FROM customer GROUP BY city;
+    9. SELECT customer_id,MAX(purch_amt) FROM orders GROUP BY customer_id;
+    10. SELECT customer_id,ord_date,MAX(purch_amt) FROM orders GROUP BY customer_id,ord_date;
+    11. SELECT salesman_id,MAX(purch_amt) FROM orders WHERE ord_date = '2012-08-17' GROUP BY salesman_id;
+    12. SELECT customer_id,ord_date,MAX(purch_amt)  FROM orders GROUP BY customer_id,ord_date HAVING MAX(purch_amt) > 2000.00;
+    13. SELECT customer_id,ord_date,MAX(purch_amt) FROM orders GROUP BY customer_id,ord_date HAVING MAX(purch_amt) BETWEEN 2000 AND 6000;
+    14. SELECT customer_id,ord_date,MAX(purch_amt) FROM orders GROUP BY customer_id,ord_date HAVING MAX(purch_amt) IN(2000 ,3000,5760, 6000);
+    15. SELECT customer_id,MAX(purch_amt) FROM orders WHERE customer_id BETWEEN 3002 and 3007 GROUP BY customer_id;
+    16. SELECT customer_id,MAX(purch_amt) FROM orders WHERE customer_id BETWEEN 3002 and 3007 GROUP BY customer_id HAVING MAX(purch_amt)>1000;
+    17. SELECT salesman_id,MAX(purch_amt) FROM orders WHERE salesman_id BETWEEN 5003 AND 5008 GROUP BY salesman_id 
+    18. SELECT COUNT(1)  FROM orders WHERE ord_date='2012-08-17';
+    19. SELECT COUNT(1) FROM salesman WHERE city IS NOT NULL;
+    20. SELECT ord_date,salesman_id,COUNT(salesman_id) FROM orders GROUP BY ord_date,salesman_id;
+    21. SELECT AVG(pro_price) AS "Average Price"   FROM item_mast;
+    22. SELECT COUNT(1) AS "Number of Products"   FROM item_mast  WHERE pro_price >= 350;
+    23. SELECT AVG(pro_price) AS "Average Price",pro_com AS "Company ID" FROM item_mast GROUP BY pro_com;
+    24. SELECT AVG(pro_price) AS "Average Price",pro_com AS "Company ID" FROM item_mast GROUP BY pro_com;
+    25. SELECT emp_dept, COUNT(1) FROM emp_details GROUP BY emp_dept;
+
+C)       SQL Formatting query output
+
+    1. SELECT salesman_id,name,city,CONCAT(CAST(commission AS VARCHAR(10)),'%') FROM salesman
+    2. SELECT ord_date,CONCAT(CAST(count(ord_no) AS VARCHAR(10)),' orders') FROM orders GROUP BY ord_date
+    3. SELECT * FROM orders ORDER BY ord_no;
+    4. SELECT * FROM orders ORDER BY ord_date DESC;
+    5. SELECT * FROM orders ORDER BY ord_date, purch_amt DESC;
+    6. SELECT cust_name,city,grade FROM customer ORDER BY customer_id;
+    7. SELECT salesman_id,ord_date,MAX(purch_amt) FROM orders GROUP BY salesman_id,ord_date ORDER BY salesman_id,ord_date;
+    8. SELECT cust_name,city,grade FROM customer ORDER BY 3 DESC;
+    9. SELECT customer_id, COUNT(DISTINCT ord_no), MAX(purch_amt) FROM orders GROUP BY customer_id ORDER BY 2 DESC;
+    10. SELECT ord_date, SUM(purch_amt), SUM(purch_amt)*.15 FROM orders GROUP BY ord_date ORDER BY ord_date;
+
+D)  SQL Quering on Multiple Tables
+
+    1. SELECT customer.cust_name,salesman.name, salesman.city FROM salesman, customer WHERE salesman.city = customer.city;
+    2. SELECT customer.cust_name,salesman.name, salesman.city FROM salesman, customer WHERE salesman.city = customer.city;
+    3. SELECT ord_no, cust_name, orders.customer_id, orders.salesman_id FROM salesman, customer, orders WHERE customer.city <> salesman.city AND orders.customer_id = customer.customer_id AND orders.salesman_id = salesman.salesman_id;
+    4. SELECT orders.ord_no, customer.cust_name FROM orders, customer WHERE orders.customer_id = customer.customer_id; 
+    5. SELECT customer.cust_name AS "Customer",customer.grade AS "Grade" FROM orders, salesman, customer WHERE orders.customer_id = customer.customer_id AND orders.salesman_id = salesman.salesman_id AND salesman.city IS NOT NULL AND customer.grade IS NOT NULL;
+    6. SELECT customer.cust_name AS "Customer",customer.city AS "City",salesman.name AS "Salesman",salesman.commission FROM customer,salesman WHERE customer.salesman_id = salesman.salesman_id AND salesman.commission BETWEEN .12 AND .14;
+    7. SELECT ord_no, cust_name, commission AS "Commission%",purch_amt*commission AS "Commission" FROM salesman,orders,customer WHERE orders.customer_id = customer.customer_id AND orders.salesman_id = salesman.salesman_id AND customer.grade>=200;
+
+E)  SQL JOINS 
+
+    1. SELECT salesman.name,customer.cust_name FROM salesman inner join customer on salesman.salesman_id = customer.salesman_id
+    2. SELECT  orders.ord_no,orders.purch_amt,customer.cust_name,customer .city FROM orders ,customer WHERE customer customer_id=orders .customer_id AND  orders.purch_amt BETWEEN 500 AND 2000;
+    3. SELECT a.cust_name AS "Customer Name", a.city, b.name AS "Salesman", b.commission FROM customer a INNER JOIN salesman b ON a.salesman_id=b.salesman_id;
+    4. SELECT a.cust_name AS "Customer Name", a.city, b.name AS "Salesman", b.commission FROM customer a INNER JOIN salesman b ON a.salesman_id=b.salesman_id WHERE b.commission>.12;
+    5. SELECT a.cust_name AS "Customer Name", a.city, b.name AS "Salesman", b.city,b.commission  FROM customer a  INNER JOIN salesman b  ON a.salesman_id=b.salesman_id WHERE b.commission>.12 AND a.city<>b.city;
+    6. SELECT a.ord_no,a.ord_date,a.purch_amt,b.cust_name AS "Customer Name", b.grade, c.name AS "Salesman", c.commission FROM orders a INNER JOIN customer b ON a.customer_id=b.customer_id INNER JOIN salesman c Ona.salesman_id=c.salesman_id;
+    7. SELECT * FROM orders a inner join customer b on a.customer_id = b.customer_id and a.salesman_id = b.salesman_id inner join salesman c on c.salesman_id = a.salesman_id
+    8. SELECT a.cust_name,a.city,a.grade, b.name AS "Salesman",b.city FROM customer a LEFT JOIN salesman b ON a.salesman_id=b.salesman_id order by a.customer_id;
+    9. SELECT a.cust_name,a.city,a.grade, b.name AS "Salesman", b.city FROM customer a LEFT OUTER JOIN salesman b ON a.salesman_id=b.salesman_id WHERE a.grade<300 ORDER BY a.customer_id;
+    10. SELECT a.cust_name,a.city, b.ord_no,b.ord_date,b.purch_amt AS "Order Amount" FROM customer a LEFT OUTER JOIN orders b ON a.customer_id=b.customer_id order by b.ord_date;
+    11. SELECT a.cust_name,a.city, b.ord_no,b.ord_date,b.purch_amt AS "Order Amount", c.name,c.commission FROM customer a LEFT OUTER JOIN orders b ON a.customer_id=b.customer_id LEFT OUTER JOIN salesman c ON c.salesman_id=b.salesman_id;
+    12. SELECT a.cust_name,a.city,a.grade, b.name AS "Salesman", b.city FROM customer a RIGHT OUTER JOIN salesman b ON b.salesman_id=a.salesman_id ORDER BY b.salesman_id;
+    13. SELECT a.cust_name,a.city,a.grade, b.name AS "Salesman", c.ord_no, c.ord_date,c.purch_amt FROM customer a RIGHT OUTER JOIN salesman b ON b.salesman_id=a.salesman_id RIGHT OUTER JOIN orders c ON c.customer_id=a.customer_id;
+    14. SELECT a.cust_name,a.city,a.grade, b.name AS "Salesman", c.ord_no, c.ord_date, c.purch_amt FROM customer a RIGHT OUTER JOIN salesman b ON b.salesman_id=a.salesman_id LEFT OUTER JOIN orders c ON c.customer_id=a.customer_id WHERE c.purch_amt>=2000 AND a.grade IS NOT NULL;
+    15. SELECT a.cust_name,a.city, b.ord_no,b.ord_date,b.purch_amt AS "Order Amount" FROM customer a FULL OUTER JOIN orders b ON a.customer_id=b.customer_id;
+    16. SELECT a.cust_name,a.city, b.ord_no,b.ord_date,b.purch_amt AS "Order Amount" FROM customer a FULL OUTER JOIN orders b ON a.customer_id=b.customer_id WHERE a.grade IS NOT NULL;
+    17. SELECT * FROM salesman a CROSS JOIN customer b;
+    18. SELECT * FROM salesman a CROSS JOIN customer b WHERE a.city IS NOT NULL;
+    19. SELECT * FROM salesman a CROSS JOIN  customer b WHERE a.city IS NOT NULL AND b.grade IS NOT NULL;
+    20. SELECT * FROM salesman a CROSS JOIN customer b WHERE a.city IS NOT NULL AND b.grade IS NOT NULL AND  a.city<>b.city;
+    21. SELECT *   FROM item_mast    INNER JOIN company_mast   ON item_mast.pro_com= company_mast.com_id; 
+    22. SELECT item_mast.pro_name, pro_price, company_mast.com_name FROM item_mast INNER JOIN company_mast ON item_mast.pro_com = company_mast.com_id; 
+    23. SELECT AVG(pro_price), company_mast.com_name FROM item_mast INNER  JOIN company_mast ON item_mast.pro_com= company_mast.com_id  GROUP BY company_mast.com_name; 
+    24.  SELECT AVG(pro_price), company_mast.com_name FROM item_mast INNER JOIN company_mast ON item_mast.pro_com= company_mast.com_id GROUP BY company_mast.com_name HAVING AVG(pro_price) >= 350;
+    25. SELECT A.pro_name, A.pro_price, F.com_name FROM item_mast A INNER JOIN company_mast F ON A.pro_com = F.com_id AND A.pro_price =  ( SELECT MAX(A.pro_price) FROM item_mast A WHERE A.pro_com = F.com_id );
+    26. SELECT emp_idno, A.emp_fname AS "First Name", emp_lname AS "Last Name", B.dpt_name AS "Department", emp_dept, dpt_code,  dpt_allotment FROM emp_details A INNER JOIN emp_department B  ON A.emp_dept = B.dpt_code;
+    27. SELECT emp_details.emp_fname AS "First Name", emp_lname AS "Last Name", emp_department.dpt_name AS "Department", dpt_allotment AS "Amount Allotted" FROM emp_details  INNER JOIN emp_department  ON emp_details.emp_dept = emp_department.dpt_code;
+    28. SELECT emp_details.emp_fname AS "First Name", emp_lname AS "Last Name" FROM emp_details  INNER JOIN emp_department  ON emp_details.emp_dept = emp_department.dpt_code AND emp_department.dpt_allotment > 50000;
+    29. SELECT emp_department.dpt_name FROM emp_details INNER JOIN emp_department ON emp_dept =dpt_code GROUP BY emp_department.dpt_name HAVING COUNT(*) > 2;
+E) SQL Union
+
+    1. SELECT salesman_id "ID", name, 'Salesman' FROM salesman WHERE city='London' UNION (SELECT customer_id "ID", cust_name, 'Customer' FROM customer WHERE city='London')
+    2. SELECT salesman_id, city FROM customer UNION (SELECT salesman_id, city FROM salesman)
+    3. SELECT salesman_id, customer_id FROM customer UNION (SELECT salesman_id, customer_id FROM orders)
+    4. SELECT a.salesman_id, name, ord_no, 'highest on', ord_date FROM salesman a, orders b WHERE a.salesman_id =b.salesman_id AND b.purch_amt= (SELECT MAX (purch_amt) FROM orders c WHERE c.ord_date = b.ord_date) UNION (SELECT a.salesman_id, name, ord_no, 'lowest on', ord_date FROM salesman a, orders b WHERE a.salesman_id =b.salesman_id AND b.purch_amt= (SELECT MIN (purch_amt) FROM orders c WHERE c.ord_date = b.ord_date)) ORDER BY 3
+    5. SELECT a.salesman_id, name, ord_no, 'highest on', ord_date FROM salesman a, orders b WHERE a.salesman_id =b.salesman_id AND b.purch_amt= (SELECT MAX (purch_amt) FROM orders c WHERE c.ord_date = b.ord_date) UNION (SELECT a.salesman_id, name, ord_no, 'lowest on', ord_date FROM salesman a, orders b WHERE a.salesman_id =b.salesman_id AND b.purch_amt= (SELECT MIN (purch_amt) FROM orders c WHERE c.ord_date = b.ord_date)) ORDER BY 3
+    6. SELECT customer_id, city, grade, 'High Rating' FROM customer WHERE grade >= 300 UNION (SELECT customer_id, city, grade, 'Low Rating' FROM customer WHERE grade < 300)
+
+F)SQL SUBQUERIES 
+    1. SELECT * FROM orders WHERE salesman_id = (select salesman_id FROM salesman WHERE name='Paul Adam');
+    2. SELECT * FROM orders WHERE salesman_id IN (SELECT salesman_id FROM salesman WHERE city='London');
+    3. SELECT * FROM orders WHERE salesman_id IN (SELECT DISTINCT salesman_id FROM orders WHERE customer_id =3007);
+    4. SELECT * FROM orders WHERE purch_amt > (select AVG(purch_amt) FROM orders where ord_date ='10/10/2012');
+    5. SELECT * FROM orders WHERE salesman_id IN (select salesman_id FROM salesman WHERE city ='New York');
+    6. SELECT commission FROM salesman WHERE salesman_id IN (select salesman_id FROM customer WHERE city = 'Paris');
+    7. SELECT * FROM customer WHERE customer_id = (select salesman_id - 2001 FROM salesman WHERE name = 'Mc Lyon');
+    8. SELECT grade, COUNT (*) FROM customer Group by grade HAVING grade > (select AVG(grade) FROM customer WHERE city = 'New York');
+    9. SELECT * FROM orders WHERE salesman_id IN(SELECT salesman_id FROM salesman WHERE commission = (SELECT MAX(commission) FROM salesman));
+    10. SELECT b.*, a.cust_name FROM orders b INNER JOIN customer a ON a.customer_id=b.customer_id AND b.ord_date='2012-08-17';
+    11. SELECT * FROM SALESMAN WHERE salesman_id IN (SELECT salesman_id FROM customer GROUP BY salesman_id HAVING COUNT(customer_id) > 1)
+    12. SELECT * FROM orders a WHERE purch_amt > (SELECT AVG(purch_amt) FROM orders b WHERE b.customer_id = a.customer_id);
+    13. SELECT * FROM orders a WHERE purch_amt >= (SELECT AVG(purch_amt) FROM orders b WHERE b.customer_id = a.customer_id);
+    14. SELECT ord_date, SUM (purch_amt) FROM orders a GROUP BY ord_date HAVING SUM (purch_amt) > (SELECT 1000.00 + MAX(purch_amt) FROM orders b WHERE a.ord_date = b.ord_date);
+    15. SELECT customer_id,cust_name, city FROM customer WHERE EXISTS (SELECT * FROM customer WHERE city='London');
+    16. SELECT * FROM salesman WHERE salesman_id IN (SELECT salesman_id FROM customer GROUP BY salesman_id HAVING COUNT(customer_id) > 1)
+    17. SELECT * FROM salesman WHERE salesman_id IN (SELECT salesman_id FROM customer GROUP BY salesman_id HAVING COUNT(customer_id) = 1)
+    18. SELECT * FROM salesman where salesman_id IN (SELECT salesman_id FROM customer WHERE customer_id IN (SELECT customer_id FROM orders GROUP BY customer_id HAVING COUNT(customer_id) > 1))
+    19. SELECT * FROM salesman WHERE city IN(SELECT city FROM customer);
+    20. SELECT * FROM salesman WHERE salesman_id IN (SELECT salesman_id FROM customer GROUP BY salesman_id HAVING COUNT(customer_id) > 1)
+    21. SELECT * FROM salesman a WHERE EXISTS (SELECT * FROM CUSTOMER b WHERE  a.name  < b.cust_name);
+    22. SELECT * FROM customer WHERE grade > ANY (SELECT grade FROM CUSTOMER WHERE  city < 'New York');
+    23. SELECT * FROM Orders WHERE purch_amt > ANY (SELECT purch_amt FROM orders WHERE  ord_date='2012/09/10');
+    24. SELECT * FROM orders WHERE purch_amt < ANY (SELECT purch_amt FROM orders a, customer b WHERE  a.customer_id=b.customer_id AND b.city='London');
+    25. SELECT salesman.name, salesman.city, subquery1.total_amt FROM 
+    26. salesman, (SELECT salesman_id, SUM(orders.purch_amt) AS total_amt  FROM orders GROUP BY salesman_id) subquery1 WHERE subquery1.salesman_id = salesman.salesman_id AND salesman.city IN (SELECT DISTINCT city FROM customer);
+    27. SELECT * FROM Orders WHERE purch_amt > ANY (SELECT purch_amt FROM orders WHERE  ord_date='2012/09/10');
+    28. SELECT * FROM customer WHERE grade NOT IN (SELECT grade FROM customer WHERE city='London');
+    29. SELECT * FROM customer WHERE grade NOT IN (SELECT grade FROM customer WHERE city='Paris');
+    30. SELECT * FROM customer WHERE NOT grade IN  (SELECT grade FROM customer WHERE city='Dallas');
+    31. SELECT AVG(pro_price) AS "Average Price", company_mast.com_name As "Company" FROM item_mast, company_mast WHERE item_mast.pro_com= company_mast.com_id GROUP BY company_mast.com_name;
+    32. SELECT AVG(pro_price) AS "Average Price",  company_mast.com_name AS "Company" FROM item_mast, company_mast  WHERE item_mast.pro_com= company_mast.com_id GROUP BY company_mast.com_name HAVING AVG(pro_price) >= 350;
+    33. SELECT P.pro_name AS "Product Name", P.pro_price AS "Price", C.com_name AS "Company" FROM item_mast P, company_mast C WHERE P.pro_com = C.com_id     AND P.pro_price =  ( SELECT MAX(P.pro_price) FROM item_mast P  WHERE P.pro_com = C.com_id );
+    34. SELECT *   FROM emp_details WHERE emp_lname IN ('Gabriel' , 'Dosio');
+    35. SELECT *  FROM emp_details  WHERE emp_dept IN (89,63);
+    36. SELECT emp_fname, emp_lname  FROM emp_details  WHERE emp_dept IN  (SELECT dpt_code  FROM emp_department  WHERE dpt_allotment > 50000);
+    37. SELECT *  FROM emp_department WHERE dpt_allotment > ( SELECT AVG(dpt_allotment) FROM emp_department);
+    38. SELECT *  FROM emp_department WHERE dpt_allotment > (  SELECT AVGSELECT dpt_name FROM emp_department  WHERE dpt_code IN ( SELECT emp_dept FROM emp_details GROUP BY emp_dept      HAVING COUNT(*) >2  );(dpt_allotment) FROM emp_department );
+    39. SELECT emp_fname, emp_lname FROM emp_details WHERE emp_dept IN (  SELECT dpt_code  FROM emp_department   WHERE dpt_allotment= (SELECT MIN(dpt_allotment) FROM emp_department  WHERE dpt_allotment > (SELECT MIN(dpt_allotment) FROM emp_department )));
+
+
+RANK() Functions along with CTE
+    1. select *,row_number() over(partition by job_id order by manager_id) as p from employees;
+    2. select *,rank() over(partition by job_id order by manager_id) as p from employees;
+    3. select *,dense_rank() over(partition by job_id order by manager_id) as p from employees;
+    4.  with cte_employee as (select *,rank() over(partition by job_id order by salary) as ranking from employees) select * from cte_employee;
+    
+    
+
+Trigger-
+https://www.youtube.com/watch?v=-33ojNgvqrM&list=PLT9miexWCpPXdFYnExGsu5xidLsMD18zz&index=1
+before delete Trigger
+
+create trigger before_message_deletes before delete
+ON mydb.employee
+FOR each row
+	insert into mydb.employee_logs(empid,empname,designation,department,joiningdate)
+    values(old.empid,old.empname,old.designation,old.department,old.joiningdate);
+	
+
+After Insert Trigger
+create trigger after_record_inserts after insert
+on mydb.employee
+for each row
+		insert into mydb.employee_logs(empid,empname,designation,department,joiningdate,status)
+		values(new.empid,new.empname,new.designation,new.department,new.joiningdate,"INSERTED");
+		
+
+Before Update Trigger
+create trigger before_record_updates before update
+on mydb.employee
+	for each row
+		insert into mydb.employee_logs(empid,empname,designation,department,joiningdate,status)
+		values(old.empid,old.empname,old.designation,old.department,old.joiningdate,"UPDATED");
+		
+Mutiple Triggers Same Time and Same event
+delimiter $$
+create trigger after_record_updates before update
+on mydb.employee 
+	for each row follows before_record_updates
+    begin 
+		if old.empid <> new.empid then
+			insert into mydb.employee_logs(empid,empname,designation,department,joiningdate,status)
+				values(new.empid,new.empname,new.designation,new.department,new.joiningdate,"UPDATED_NEW");
+		else
+			update mydb.employee_logs
+            set empname = new.empname,
+				designation = new.designation,
+                department = new.department,
+                status = 'UPDATED_NEW';
+		end if;
+    end$$
+delimiter ;
+
+
+Stored Procedures-
+https://www.youtube.com/watch?v=w59EArbCbuI&list=PLT9miexWCpPUoMztUQSvkPGR6SYSnqK4Z&index=1
+
+Simple Stored_Procedure-
+Delimiter $$
+create procedure getAllEmployees()
+Begin
+	select * from myDB.employee;
+END $$
+delimiter ;
+
+Stored Procedure With Variables-
+Delimiter $$
+create procedure getSelectedEmployees()
+Begin
+	declare id int default 0;
+    set id = 5;
+	select * from myDB.employee where empid = id;
+END $$
+delimiter ;
+
+Stored Procedure With Parameters:-
+	IN Mode:-
+		Delimiter $$
+		create procedure getSelectedEmployeesParameter(IN id int)
+		Begin
+			select * from myDB.employee where empid = id;
+		END $$
+		delimiter ;
+	
+	Out Mode:
+		Delimiter $$
+		create procedure getSelectedEmployeesName(IN id int,OUT employeename varchar(50),OUT desg varchar(30))
+		Begin
+		select empname into employeename from myDB.employee where empid = id;
+		select designation into desg from myDB.employee where empid = id;
+		END $$
+	
+
+Stored Procedures- With IF-ELSE:-
+	Delimiter $$
+	create procedure getDeptID(IN id int,OUT deptID int)
+	Begin
+		DECLARE deptName varchar(50) ;
+		select department into deptName from myDB.employee where empid = id;
+		if (LOWER(deptName) = 'accounts') THEN
+			SET deptID = 10;
+		ELSEIF (LOWER(deptName) = 'it') THEN
+			SET deptID = 20;
+		END IF; 
+	END $$
+	delimiter ;
+
+Stored Procedures-With Case :-
+	Delimiter $$
+	create procedure getDeptIDUsingCase(IN id int,OUT deptID int)
+	Begin
+		DECLARE deptName varchar(50) ;
+		select department into deptName from myDB.employee where empid = id;
+		CASE
+			WHEN LOWER(deptName) = 'accounts' THEN
+				SET deptID = 10;
+			WHEN LOWER(deptName) = 'it' THEN
+				SET deptID = 20;
+		END CASE; 
+	END $$
+	delimiter ;
+
+Stored Procedure-While Loop
+	Delimiter $$
+	create procedure useWhileLoop(OUT outputString varchar(20))
+	Begin
+		DECLARE x int;
+		DECLARE stringValue varchar(20);
+		SET x = 1;
+		SET stringValue = "";
+		WHILE x <= 5 DO
+			SET stringValue = concat(stringValue,x," , ");
+			SET x = x + 1;
+		END WHILE; 
+		SET outputString = stringValue;
+	END $$
+	delimiter ;
+
+Stored Procedure-Repeat create procedure useRepeat(OUT outputString varchar(20))
+	Begin
+		DECLARE x int;
+		DECLARE stringValue varchar(20);
+		SET x = 1;
+		SET stringValue = "";
+		REPEAT
+			SET stringValue = concat(stringValue,x," , ");
+			SET x = x + 1;
+			UNTIL x > 5
+		END REPEAT; 
+		SET outputString = stringValue;
+	END $$
+	delimiter ;
+
+Stored Procedure-Loop
+	Delimiter $$
+	create procedure useLOOP(OUT outputString varchar(100))
+	Begin
+		DECLARE x int;
+		DECLARE stringValue varchar(100);
+		SET x = 1;
+		SET stringValue = "";
+		loop_label:loop
+			IF x > 20 THEN
+				leave loop_label;
+			END IF;
+			SET x = x + 1;
+			IF(X MOD 2) THEN
+				iterate loop_label;
+			ELSE 
+				SET stringValue = concat(stringValue,x," , ");
+			END IF;
+		END LOOP; 
+		SET outputString = stringValue;
+	END $$
+	delimiter ;
+	
+
+Stored Procedure-Cursors
+	DELIMITER $$
+	CREATE procedure cursor_use(out employeeList varchar(500) )
+	BEGIN
+	DECLARE finished INT DEFAULT 0;
+	DECLARE employee_name_list VARCHAR(500) DEFAULT "";
+	DECLARE employeeNames varchar(50) DEFAULT "" ;
+	DECLARE employeeDATA CURSOR FOR SELECT empname FROM myDB.employee limit 3;
+	DECLARE CONTINUE HANDLER FOR NOT FOUND SET finished = 1;
+	OPEN employeeDATA;
+	getempName:LOOP
+		FETCH employeeDATA INTO employeeNames;
+		IF(FINISHED = 1) THEN
+			LEAVE getempName;
+		END IF;
+		SET employee_name_list = CONCAT(employee_name_list," , ",employeeNames);
+		END LOOP getempName;
+	CLOSE employeeDATA;
+	SET employeeList = employee_name_list;
+	END $$;
+	DELIMITER ;
+	
+Stored Procedure-Functions
+	DELIMITER $$
+	CREATE FUNCTION findStringLength(inputString varchar(20)) RETURNS int
+	BEGIN
+		RETURN LENGTH(inputString);
+	END $$;
+	DELIMITER ;
+
+		
+
+
+
