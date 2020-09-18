@@ -1,0 +1,58 @@
+MongoDB-
+https://www.youtube.com/watch?v=GdAkzfDq-xQ&list=PLWPirh4EWFpG2gpAkHVocvvzIWNGet2BF&index=1
+Creating Collection- 
+db.createCollection("employee",{size:5242880,max:100,capped:true})
+
+Inserting data in collection-
+db.employee_new.insert({name:"John",city:"London",age:20,salary:25000});
+db.employee_new.insert({name:"Prabhat",city:"London",age:22,salary:27000});
+db.employee_new.insert({name:"Bishal",city:"Jamshedpur",age:23,salary:23000});
+db.employee_new.insert({name:"Anand",city:"Patna",age:27,salary:33000});
+db.employee_new.insert({name:"Pritesh",city:"Bhopal",age:56,salary:33500});
+db.employee_new.insert({name:"Kishan",city:"Delhi",age:56,salary:43500});
+db.employee_new.insert({name:"Hari",city:"Mumbai",age:26,salary:63500});
+
+Reading Data-
+db.employee_new.find().pretty()
+
+Find those employees whose city is Mumbai-
+>  db.employee_new.find({city:"Mumbai"});
+
+Find name,salary of employee whose salary is less than 30000
+> db.employee_new.find({salary:{$lt:30000}},{name:1,salary:1});
+
+Find employees whose salary is more than 25000 and lives in Mumbai
+> db.employee_new.find({$and:[{salary:{$gt:25000}},{city:"Mumbai"}]});
+
+Update City of Hari to Delhi
+db.employee_new.update({name:"Hari"},{$set:{city:"Delhi"}});
+
+Increase salary of Delhites by 20%
+ db.employee_new.updateMany({city:"Delhi"},{$mul:{salary:1.20}});
+ 
+Employees living in Delhi
+ db.employee_new.remove({city:"Delhi"})
+ 
+importing json file to mongoDB
+mongoimport --jsonArray --db newDB --collection students --file D:\input.json
+
+importing csv file to mongoDB
+mongoimport --db newDB --collection students --type=csv  --headerline --file D:\input2.csv
+
+exporting a json file from mongoDB
+
+
+exporting a csv file frommongoDB
+mongoexport --db mydatabase --collection employee_new --type=csv --fields name,city,age,salary --out D:\emp.csv
+
+Creating Index-
+db.students.ensureIndex({"rollno":1})
+
+Sum of the salaries-
+db.employee_new.aggregate({$group:{_id:null ,totalSalary:{$sum:"$salary"}}});
+
+Average of the salaries-
+db.employee.aggregate({$group:{_id:null,averageSalary:{$avg:"$salary"}}});
+
+Average of Salaries by City-
+db.employee.aggregate({$group:{_id:"$city",averageSalaryByCity:{$avg:"$salary"}}});
