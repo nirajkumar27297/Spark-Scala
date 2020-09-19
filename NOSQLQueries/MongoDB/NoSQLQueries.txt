@@ -45,8 +45,6 @@ exporting a json file from mongoDB
 exporting a csv file frommongoDB
 mongoexport --db mydatabase --collection employee_new --type=csv --fields name,city,age,salary --out D:\emp.csv
 
-Creating Index-
-db.students.ensureIndex({"rollno":1})
 
 Sum of the salaries-
 db.employee_new.aggregate({$group:{_id:null ,totalSalary:{$sum:"$salary"}}});
@@ -56,3 +54,140 @@ db.employee.aggregate({$group:{_id:null,averageSalary:{$avg:"$salary"}}});
 
 Average of Salaries by City-
 db.employee.aggregate({$group:{_id:"$city",averageSalaryByCity:{$avg:"$salary"}}});
+
+Using Match Function-(same as where in SQL)
+ db.employee_new.aggregate([{$match:{city:"Patna"}}]);
+ 
+ Using Project Function-(Same as select)
+ db.employee_new.aggregate([{$match:{city:"Patna"}},{$project:{"name":1,"salary":1}}]);
+ 
+ Finding Minimum and maximum Salary-
+ db.employee_new.aggregate([{$group:{"_id":"$city",minSal:{"$min":"$salary"},maxSal:{"$max":"$salary"}}}]);
+ 
+ Using Push and addToSet-
+ db.employee_new.aggregate([{$group:{"_id":"$city","arrPush":{"$push":"$salary"},"arrSet":{"$addToSet":"$salary"}
+ 
+ Using Sorting-
+ db.employee_new.aggregate([{$match:{"city":"London"}},{$sort:{"salary":1}}]);
+ 
+ Using Sample-
+  db.employee_new.aggregate({"$sample":{size:1}});
+  
+left join-
+db.employee_new.aggregate([
+{
+$lookup:{
+from:"salaryClass",
+ localField:"salary",
+ foreignField:"salary",
+ as : "COMMON"
+	}
+}]);
+
+
+Creating Index-
+db.students.createIndex({"rollno":1},{"name":"RollNO_INDEX"})
+
+Sparse Index-
+db.students.createIndex({"rollno":1},{unique:true,sparse:true});
+
+Partial Index-
+db.students.createIndex({"class":1},{partialFilterExpression:{"class":{$lt:11}}});
+
+Compund Index-
+db.students.createIndex({"rollno":1,"class":-1})
+
+Drop Index-
+db.students.dropIndex({"rollno" : 1});
+
+Exists Index-
+db.students.find({"rollno":{$exists:true}});
+
+Using Expression-
+db.students.find({ $expr:{$gt:["$rollno","$class"]}})
+
+Using Regex-
+db.students.find({"name":{$regex:/^b/,$options:'i'}});
+
+Using elemMatch(query)-
+db.students.find({subjects:{$elemMatch:{$in:["English","Maths"]}}});
+
+Using $all-
+ db.students.find({subjects:{$all:["English","Hindi"]}});
+
+Field Update Operators-
+
+$CurrentDate-
+db.students.updateOne( { name:"Bishal"}, { $currentDate:{ date:true, "newDate":{$type:"timestamp"}}});
+
+$inc-
+db.students.update({name:"Bishal"},{$inc:{rollno:2}});
+
+$min-
+db.students.update({name:"Bishal"},{$min:{rollno:19}});
+
+$max-
+db.students.update({name:"Bishal"},{$max:{rollno:21}});
+
+$mul-
+db.employee_new.update({city:"Patna"},{$mul:{salary:1.25}});
+
+$rename-
+db.employee_new.updateMany({},{$rename:{"city":"Place"}});
+
+$setOnInsert-
+db.employee_new.update({city:"Patna"},{$set:{age:27},$setOnInsert:{salary:25000}},{upsert:true});
+
+$unset-
+db.employee_new.update({city:"Patna"},{$unset:{age:0}});
+
+Array Update Operators-
+
+$(update)
+db.students.update({name:"Bishal",subjects:"English"},{$set : {"subjects.$":"Physics"}});
+
+$[]
+
+
+
+$[Identifier]-
+db.students.update({},{$set:{"subjects.$[ele]":"English"}},{arrayFilters:[{ele:"Maths"}]});
+
+$addToSet-
+db.students.update({name:"Bishal"},{$addToSet:{"subjects":"Physics"}});
+
+$each-
+db.students.update({name:"Bishal"},{$addToSet:{"subjects":{$each:["Physics","Chemistry]}}});
+
+$push-
+db.students.update({name:"Bishal"},{$push:{subjects:{$each:["Hindi","Science"]}}});
+
+$pop-
+db.students.update({name:"Bishal"},{$pop:{subjects:1}});
+
+$pullAll-
+db.students.update({name:"Bishal"},{$pullAll:{subjects:["Hindi","Science"]}});
+
+$position-
+db.students.update({name:"Bishal"},{$push:{subjects:{$each:["Hindi","Science"],$position:2}}});
+
+$slice-
+db.students.update({name:"Bishal"},{$push:{subjects:{$each:["Hindi","English"],$slice:3}}});
+
+$sort-
+db.students.update({name:"Bishal"},{$push:{subjects:{$each:["Hindi","English"],$sort:1}}});
+
+
+Aggregation Pipeline Stages-
+
+$addFields-
+db.scores.aggregate([{ $addFields:{totalHomeWork:{$sum:"$homework"},totalQuiz:{$sum:"$quiz"}}}]);
+
+$count-
+db.students.aggregate([{$match:{class:12}},{$count:"NumberOfStudents"}]);
+
+ 
+ 
+ 
+ 
+ 
