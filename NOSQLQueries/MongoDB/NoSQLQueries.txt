@@ -186,7 +186,173 @@ db.scores.aggregate([{ $addFields:{totalHomeWork:{$sum:"$homework"},totalQuiz:{$
 $count-
 db.students.aggregate([{$match:{class:12}},{$count:"NumberOfStudents"}]);
 
- 
+$group-
+db.sales.aggregate([{$group:{_id:null,count:{$sum:1}}}]);
+db.sales.aggregate([{$group:{_id:"$item"}}]);
+db.books.aggregate([{$limit:2}]);
+
+$project-
+db.books.aggregate([{$project:{title:1,"author.first":1,"author.last":1,"author.middle":{ $cond:{ if:{$eq:["","$author.middle"]},then:"$$REMOVE",else:{"author.middle"}}}}}]);
+
+$sort-
+db.books.aggregate([{$sort:{title:1,author:-1}}])
+
+$unionWith-
+db.suppliers.aggregate([{ $project: { state: 1, _id: 0 } },    { $unionWith: { coll: "warehouses", pipeline: [ { $project: { state: 1, _id: 0 } } ]} } ])
+
+$unset-
+db.books.aggregate([{$unset:["isbn","author.first","copies.warehouse"]}]);
+
+$unwind-
+db.inventory2.aggregate([{$unwind:{path:"$sizes",includeArrayIndex:"arrayIndex",preserveNullAndEmptyArrays:true}}]);
+
+Aggreation Pipeline Operators-
+
+$abs-
+ db.students.aggregate([{$project:{delta:{$abs:{$subtract:["$class","$rollno"]}}}}]);
+
+$allElementsTrue-
+db.survey.aggregate([{$project:{responses:1,isAllTrue:{$allElementsTrue:["$responses"]},_id:0}}]);
+
+$acos-
+db.trigonometry.aggregate([{$addToFields:{"angle_a":{$acos:{$divide:["$side_b","$hypotenuse"]}}}}]);
+
+$anyElementTrue-
+db.survey.aggregate([{$project:{responses:1,isAnyTrue:{$anyElementTrue:["$responses"]},_id:0}}]);
+
+$arrayElemAt-
+db.users.aggregate([{$project:{name:1,first:{$arrayElemAt:["$favorites",0]},last:{$arrayElemAt:["$favorites",-1]}}}]);
+
+$ceil-
+db.samples.aggregate([{$project:{value:1,cielingValue:{$ceil:"$value"}}}])
+
+$cmp-
+db.inventory.aggregate([{$project:{item:1,qty:1,cmpTo250:{$cmp:["$qty",250]},_id:0}}]);
+
+$concatArrays-
+db.warehouse.aggregate([{$project:{items:{$concatArrays:["$inStock","$ordered]}}}]);
+
+$cond-
+db.inventory.aggregate([{$project:{item:1,discount:{$cond:{if:{$gte:["$qty",250]},then:30,else:20}}}}]);
+
+$dateFromParts-
+db.sales.aggregate([{$project:{date_timeZone:{$dateFromParts:{'year':2016,'month':12,'day':31,'hour':23,'minute':46,'second':12,'timezone':'Asia/Kolkata'}}}}]);
+
+$dateToParts-
+db.sales.aggregate([{$project:{date:{$dateToParts: { date: "$date" }},date_iso: {$dateToParts: { date: "$date", iso8601: true }},date_timezone:{$dateToParts:{date:"$date",timezone: "America/New_York" }}}}])
+
+$dateFromString-
+db.dates.aggregate([{$project:{date:{$dateFromString:{dateString:"$date",timezone:"$timezone",onNull:new Date(0),onError:"$date"}}}}])
+
+$dateToString-
+db.sales.aggregate([{$project:{yearMonthDay:{$dateToString:{format:"%Y-%m-%d",date:"$date",timezone:"+5:30"}}}}]);
+
+$dayOfMonth-
+db.sales.aggregate([{$project:{year: { $year: "$date" },month: { $month: "$date" },day: { $dayOfMonth: "$date" },hour: { $hour: "$date" },minutes: { $minute: "$date" },        seconds: { $second: "$date" },milliseconds: { $millisecond: "$date" },dayOfYear: { $dayOfYear: "$date" },dayOfWeek: { $dayOfWeek: "$date" },week: { $week: "$date" }}}])
+
+$floor-
+db.samples.aggregate([{ $project: { value: 1, floorValue: { $floor: "$value" } } }])
+
+$ifNull-
+db.inventory.aggregate([{$project:{item:1,description:{ $ifNull:["$description","Unspecified"]}}}]);
+
+$in-
+db.fruits.aggregate([{$project:{storelocation:"$location","hasBananas":{$in:["bananas","$in_stock"]}}}]);
+
+$indexOfArray-
+db.inventory.aggregate([{$project:{index:{$indexOfArray:["$items",2]}}}]);
+
+QueryModifiers
+
+$comment-
+db.inventory.find({}).comment("Find All Values");
+
+$explain-
+db.inventory.find().explain()
+
+$hint-
+db.users.find().hint( { age: 1 } )
+
+$max-
+db.scores.find().max({extraCredit:5}).hint({extraCredit:1});
+
+$maxTimeMS-
+db.scores.find().maxTimeMS(1)
+
+$min-
+db.collection.find().min( { age: 20 } ).hint( { age: 1 } )
+
+$orderBY-
+db.collection.find().sort({age:1})
+
+
+MongoDB Questions-
+https://www.w3resource.com/mongodb-exercises/#PracticeOnline
+
+1.db.restaurants.find()
+2.db.restaurants.find({},"restaurant_id","name","borough","cuisine");
+3.db.restaurants.find({},{_id:0,restaurant_id:1,name:1,"borough":1,cuisine:1}); 
+4.db.restaurants.find({},{restaurant_id:1,name:1,borough:1,zipcode:1,_id:0});
+5.db.restaurants.find({borough:"Bronx"});
+6.db.restaurants.find({"borough":"Bronx"}).limit(5);
+7.db.restaurants.find({"borough":"Bronx"}).skip(5).limit(5);
+8.db.restaurants.find({grades:{$elemMatch:{"score":{$gt:90}}}});
+9.db.restaurants.find({grades:{$elemMatch:{"score":{$gt:80,$lt:100}}}});
+10.db.restaurants.find({"address.coord":{$lt:-95.754168}});
+11.db.restaurants.find({cuisine:{$nin:["American"]},"grades.score":{$gt:70},"address.coord":{$lt:-65.754168}});
+12.db.restaurants.find({"cuisine" : {$ne : "American "},"grades.score" :{$gt: 70},"address.coord" : {$lt : -65.754168}});
+13.db.restaurants.find({cuisine:{$ne:"American"},"grades.grade":{$eq:"A"},borough:{$ne:"Brooklyn"}}).sort({"cuisine":-1});
+14.db.restaurants.find({name:/^Wil/},{restaurant_id:1,name:1,borough:1,cuisine:1});
+15.db.restaurants.find({name:/ces$/},{restaurant_id:1,name:1,borough:1,cuisine:1});
+16.db.restaurants.find({name:/.*Reg.*/},{restaurant_id:1,name:1,borough:1,cuisine:1});
+17.db.restaurants.find({borough:"Bronx",cuisine:{$in:["American","Chinese"]}});
+18.db.restaurants.find({"borough" :{$in :["Staten Island","Queens","Bronx","Brooklyn"]}},{"restaurant_id" : 1,"name":1,"borough":1,"cuisine" :1});
+19.db.restaurants.find({"borough" :{$nin :["Staten Island","Queens","Bronx","Brooklyn"]}},{"restaurant_id" : 1,"name":1,"borough":1,"cuisine" :1});
+20.db.restaurants.find({"grades.score":{$not:{$gt:10}}},{"restaurant_id":1,"name":1,"cuisine":1,"borough":1});
+21.db.restaurants.find({$or:[{cuisine:{$nin:["American","Chinese"]},name:/^Wil/}]},{"restaurant_id":1,"name":1,"borough":1,"cuisine":1});
+22.db.restaurants.find({"grades.grade":"A","grades.score":11,"grades.date":ISODate("2014-08-11T00:00:00Z")},{restaurant_id:1,name:1,grades:1});
+23.db.restaurants.find({ "grades.1.date": ISODate("2014-08-11T00:00:00Z"),"grades.1.grade":"A","grades.1.score" : 9},{"restaurant_id" : 1,"name":1,"grades":1});
+23.db.restaurants.find({"address.coord.1":{$gt:42,$lt:52}},{restaurant_id:1,name:1,address:1,coord:1});
+24.db.restaurants.find({"address.coord.1": {$gt : 42, $lte : 52}},{"restaurant_id" : 1,"name":1,"address":1,"coord":1});
+25.db.restaurants.find().sort({"name":1});
+26.db.restaurants.find().sort({"name":-1});
+27.db.restaurants.find().sort({"cuisine":1,"borough" : -1,});
+28.db.restaurants.find({"address.street":{$exists:true}});
+29.db.restaurants.find({"address.coord":{$type:1}});
+30.db.restaurants.find({"grades.score":{$mod:[7,0]}},{"restaurant_id":1,"name":1,"grades":1});
+31.db.restaurants.find({name:{$regex:"mon.*",$options:"i"}},{name:1,borough:1,"address.cord":1,cuisine:1});
+32.db.restaurants.find({name:{$regex:"^Mad",$options:"i"}},{name:1,borough:1,"address,coord":1,cuisine:1});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
  
  
  
