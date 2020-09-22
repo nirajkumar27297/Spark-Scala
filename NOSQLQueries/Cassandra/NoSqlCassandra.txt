@@ -1,0 +1,151 @@
+
+
+
+CREATING KEYSPACE-
+CREATE KEYSPACE home_security WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'}  AND durable_writes = true;
+
+CREATING TABLE-
+CREATE TABLE home_security.home (
+    home_id text PRIMARY KEY,
+    address text,
+    alt_phone text,
+    city text,
+    contact_name text,
+    email text,
+    guest_code text,
+    main_code text,
+    phone text,
+    phone_password text,
+    state text,
+    zip text
+) 
+
+INSERT COMMAND-
+Insert Into-
+insert into activity(home_id,datetime,event,code_used)
+                  values('H0147477','2014-05-21 07:32:16','alarm_set','5509');
+				  
+
+copy-
+Copy From-
+copy activity(home_id,datetime,code_used,event) FROM 'D:/input.csv' with header = true and delimiter = ',';
+
+To store table data in disk-
+nodetool flush <key_space> <table_name>
+
+sstable path-
+C:\cassandra\apache-cassandra-3.11.8\data\data
+
+To see the contents of sstable-
+ssdump <path for table db file>
+
+
+SELECT COMMAND-
+select * from home where home_id = 'H01474777'
+Always there should be an index defined on filtering column,if not then we need to create an index
+For ex:- if we try to use code column
+select * from home where guest_code = '5599';
+InvalidRequest: Error from server: code=2200 [Invalid query] message="Cannot execute this query as it might involve data filtering and thus may have unpredictable performance. If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING"
+
+Then,we need to create an index-
+ create index <index_name> on <table_name>(<field_name>);
+ex:-create index guest_code_index on home(guest_code);
+
+
+Composite Partition Key-
+create table location (
+                    vehicle_id text,
+                    date text,
+                    time timestamp,
+                    latitiude double,
+                    longtitude double,
+                    primary key ((vehicle_id,date),time)
+                    ) with clustering order by (time desc);
+
+After performing sstabledump-
+  {
+    "partition" : {
+      "key" : [ "ME100AAS", "2014-05-19" ],
+      "position" : 0
+    },
+    "rows" : [
+      {
+        "type" : "row",
+        "position" : 38,
+        "clustering" : [ "2014-05-19 14:20:00.000Z" ],
+        "liveness_info" : { "tstamp" : "2020-09-21T12:26:29.475001Z" },
+        "cells" : [
+          { "name" : "latitiude", "value" : 44.749411 },
+          { "name" : "longtitude", "value" : -67.250705 }
+        ]
+      },
+
+
+Update COMMAND-
+update home set phone_password = 'ikl' where home_id = 'H01474777';
+In case of update unline reading and updating from disk in RDBMS,in cassandra new record is been generated and when select query is triggered,only the latest record is fetched.
+[
+  {
+    "partition" : {
+      "key" : [ "H01474777" ],
+      "position" : 0
+    },
+    "rows" : [
+      {
+        "type" : "row",
+        "position" : 23,
+        "cells" : [
+          { "name" : "phone_password", "value" : "ikl", "tstamp" : "2020-09-21T13:03:31.124Z" }
+        ]
+      }
+    ]
+  }
+]
+  
+Delete COMMAND-
+delete a column-
+ delete body from messages_by_user where sender = 'juju'and sent = '2013-07-21 21:04:55';
+
+delete row
+delete  from messages_by_user where sender = 'juju';
+
+delete whole table-
+truncate table <table_name>;
+ex:-truncate table messages_by_user;
+
+drop table-
+drop table <table_name>;
+drop table messages_by_user;
+
+Tombstones-
+How delete works?
+delete from home where home_id = 'H02257222';
+The data is marked for tombstones;
+then a new memcached of the table is generated and then flush it to sstable;
+nodetool flush home_security home
+sstabledump C:\cassandra\apache-cassandra-3.11.8\data\data\home_security\home-f59d5280fbfc11eaa8cec797b98edea2\md-3-big-Data.db;
+[
+  {
+    "partition" : {
+      "key" : [ "H02257222" ],
+      "position" : 0,
+      "deletion_info" : { "marked_deleted" : "2020-09-21T13:58:09.081Z", "local_delete_time" : "2020-09-21T13:58:09Z" }
+    },
+    "rows" : [ ]
+  }
+]
+
+then running compact to compact the sstable files.
+nodetool compact home_security home
+sstabledump C:\cassandra\apache-cassandra-3.11.8\data\data\home_security\home-f59d5280fbfc11eaa8cec797b98edea2\md-4-big-Data.db;
+
+TTL(Time to Live)
+
+
+INSERT INTO location (vehicle_id, date, time, latitude, longitude) VALUES ('AZWT3RSKI', '2014-05-20', '2014-05-20 11:23:55', 34.872689, -111.757373) USING TTL 30;
+INSERT INTO location (vehicle_id, date, time, latitiude, longtitude) VALUES ('AZWT3RSKI', '2014-05-20', '2014-05-20 11:23:55', 34.872689, -111.757373) USING TTL 30;
+ 
+UPDATE location USING TTL 7776000 SET latitude = 34.872689, longitude = -111.757373 WHERE vehicle_id = 'AZWT3RSKI' AND date = '2014-05-20' AND time='2014-05-20 11:23:55';
+
+
+
