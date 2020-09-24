@@ -217,6 +217,79 @@ To remove a dead node from the cluster, and reassign its token ranges and data,t
 -bin/nodetool removenode <hostid for the node>
 	hostid can be found from nodetool status.
 	the nodetool removenode status command can be used  to watch removenode happen.
+	
+
+User Defined function-
+Enabled by changing the following settings in cassandra.yaml file
+-Java:Set enable_user_defined_functions to true
+-JavaScrit and other languages:Set enable_scripted_user_defined_functions to true
+
+Creating a function-
+create or replace function margin (goals_for int,goals_against int)
+         returns null on null input
+         returns int language java as '
+         return Integer.valueOf(Math.abs(goals_for - goals_against));';
+
+Query to test function-
+SELECT margin(goals_for, goals_against) FROM games_by_team
+WHERE league_id='English Premier League' AND season='2015/16' and team = 'Tottenham Hotspur';
+
+select avg(margin(goals_for,goals_against)) from games_by_team WHERE league_id='English Premier League' AND season='2015/16' AND team = 'Manchester United';
+select max(margin(goals_for, goals_against)) from games_by_team WHERE league_id='English Premier League' AND season='2015/16';
+
+
+User defined Aggregates-
+SFUNC The state function that is called once for every row returned. The return value of the state function becomes the state parameter for the next call.
+
+STYPE The type of the state parameter, which must be valid CQL type.
+
+FINALFUNC an optional function called once after the state function has been called for every row. The input is the return of the last state function call.
+
+
+INITCOND sets the initial value for the state passed to the first state function call. The default value is null
+create or replace function group_and_sum_state(state map<text,int>,group text,score int)
+          called on null input
+          returns map<text,int>
+          language java as '
+          state.put(group,score + state.getOrDefault(group,0));
+          return state;'
+          ;
+create aggregate if not exists group_and_sum (text,int)
+          sfunc group_and_sum_state
+          stype map<text,int>
+          initcond {};
+
+ select group_and_sum(team,goals_for) from games_by_team
+         WHERE league_id='English Premier League' AND season='2015/16';
+
+
+CREATE OR REPLACE FUNCTION mode_state (state map<ascii,int>, goals_for int, goals_against int)
+CALLED ON NULL INPUT RETURNS map<ascii,int> LANGUAGE java AS '	
+	String key = new String (goals_for + " - " + goals_against);
+	state.put(key, 1 + state.getOrDefault(key, 0));
+	return state;
+';
+CREATE OR REPLACE FUNCTION mode_final (state map<ascii,int>)
+CALLED ON NULL INPUT RETURNS ascii LANGUAGE JAVA AS '
+	String mostCommon = null;
+	int max_count = 0;
+	for (String key : state.keySet()) {
+	int value = state.get(key);
+	if (value > max_count) { mostCommon = key;max_count = value; }}
+	return mostCommon;
+';
+CREATE AGGREGATE IF NOT EXISTS mode (int, int) 
+  SFUNC mode_state
+  STYPE map<ascii,int>
+  FINALFUNC mode_final 
+  INITCOND {};
+
+SELECT mode(goals_for,goals_against) FROM games_by_team WHERE league_id='English Premier League' AND season='2015/16';
+
+
+
+		 
+
 
 
 
