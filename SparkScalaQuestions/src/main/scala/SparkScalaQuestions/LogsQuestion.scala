@@ -22,13 +22,11 @@ object LogsQuestion extends App {
   castedDf.printSchema()
   castedDf.createOrReplaceTempView("logdata")
   val countStudentsBasedOnTech = spark.sql("Select technology,count(1) as NumberOfStudents from logdata group by technology")
-  //print(countStudentsBasedOnTech.show(5))
+  countStudentsBasedOnTech.show(5)
   val timesKeyboardMouseZero = spark.sql("select count(keyboard) as keyboardCount,count(mouse) as MouseCount,username from logdata group by username having count(keyboard) =0 and count(mouse) = 0")
-  //print(timesKeyboardMouseZero.show(5))
+  timesKeyboardMouseZero.show(5)
   val lateHrs = spark.sql("select boottime,username,hour(boottime),minute(boottime) from logdata where hour(boottime) > 8 and minute(boottime) > 30 order by boottime")
   lateHrs.show(10)
-//    val workingHrs = spark.sql("select username,round((bigint(max(boottime)) - bigint(min(boottime)))/3600,2) as WorkingHrs  from logdata group by username,to_date(BootTime)")
-//  //workingHrs.show(10)
   val adjustedWorkingHours = spark.sql("select username,mouse,keyboard,lag(mouse,1) over (partition by username order  by boottime,mouse) as firstValue," +
   " lag(mouse,2) over (partition by username order  by boottime,mouse) as secondValue,lag(mouse,3) over (partition by username order  by boottime,mouse) as thirdValue,"+
   "lag(mouse,4) over (partition by username order  by boottime, mouse) as fourthValue,lag(mouse,5) over (partition by username order  by boottime,mouse) as fifthValue," +
@@ -36,11 +34,10 @@ object LogsQuestion extends App {
   adjustedWorkingHours.createOrReplaceTempView("workingHours")
   val adjustedWorkingHoursNew = spark.sql("select distinct username,0.5 as value from workingHours where firstValue = 0 and secondValue = 0 and thirdValue = 0" +
     " and fourthValue = 0 and fifthValue = 0 and sixthValue = 0")
-  //adjustedWorkingHoursNew.show()
+  adjustedWorkingHoursNew.show()
   adjustedWorkingHoursNew.createOrReplaceTempView("workingHours")
   val adjustedWorkingHoursfinal = spark.sql("select logdata.username,round((bigint(max(boottime)) - bigint(min(boottime)))/3600,2) - coalesce(value,0) as WorkingHrs  from logdata " +
-    "left join workingHours  on workingHours.username = logdata.username group by logdata.username,to_date(BootTime)")
-
+    "left join workingHours  on workingHours.username = logdata.username group by logdata.username,to_date(BootTime),value")
   adjustedWorkingHoursfinal.show()
 
 }
