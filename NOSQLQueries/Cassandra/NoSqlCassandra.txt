@@ -1,0 +1,295 @@
+
+
+
+CREATING KEYSPACE-
+CREATE KEYSPACE home_security WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'}  AND durable_writes = true;
+
+CREATING TABLE-
+CREATE TABLE home_security.home (
+    home_id text PRIMARY KEY,
+    address text,
+    alt_phone text,
+    city text,
+    contact_name text,
+    email text,
+    guest_code text,
+    main_code text,
+    phone text,
+    phone_password text,
+    state text,
+    zip text
+) 
+
+INSERT COMMAND-
+Insert Into-
+insert into activity(home_id,datetime,event,code_used)
+                  values('H0147477','2014-05-21 07:32:16','alarm_set','5509');
+				  
+
+copy-
+Copy From-
+copy activity(home_id,datetime,code_used,event) FROM 'D:/input.csv' with header = true and delimiter = ',';
+
+To store table data in disk-
+nodetool flush <key_space> <table_name>
+
+sstable path-
+C:\cassandra\apache-cassandra-3.11.8\data\data
+
+To see the contents of sstable-
+ssdump <path for table db file>
+
+
+SELECT COMMAND-
+select * from home where home_id = 'H01474777'
+Always there should be an index defined on filtering column,if not then we need to create an index
+For ex:- if we try to use code column
+select * from home where guest_code = '5599';
+InvalidRequest: Error from server: code=2200 [Invalid query] message="Cannot execute this query as it might involve data filtering and thus may have unpredictable performance. If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING"
+
+Then,we need to create an index-
+ create index <index_name> on <table_name>(<field_name>);
+ex:-create index guest_code_index on home(guest_code);
+
+
+Composite Partition Key-
+create table location (
+                    vehicle_id text,
+                    date text,
+                    time timestamp,
+                    latitiude double,
+                    longtitude double,
+                    primary key ((vehicle_id,date),time)
+                    ) with clustering order by (time desc);
+
+After performing sstabledump-
+  {
+    "partition" : {
+      "key" : [ "ME100AAS", "2014-05-19" ],
+      "position" : 0
+    },
+    "rows" : [
+      {
+        "type" : "row",
+        "position" : 38,
+        "clustering" : [ "2014-05-19 14:20:00.000Z" ],
+        "liveness_info" : { "tstamp" : "2020-09-21T12:26:29.475001Z" },
+        "cells" : [
+          { "name" : "latitiude", "value" : 44.749411 },
+          { "name" : "longtitude", "value" : -67.250705 }
+        ]
+      },
+
+
+Update COMMAND-
+update home set phone_password = 'ikl' where home_id = 'H01474777';
+In case of update unline reading and updating from disk in RDBMS,in cassandra new record is been generated and when select query is triggered,only the latest record is fetched.
+[
+  {
+    "partition" : {
+      "key" : [ "H01474777" ],
+      "position" : 0
+    },
+    "rows" : [
+      {
+        "type" : "row",
+        "position" : 23,
+        "cells" : [
+          { "name" : "phone_password", "value" : "ikl", "tstamp" : "2020-09-21T13:03:31.124Z" }
+        ]
+      }
+    ]
+  }
+]
+  
+Delete COMMAND-
+delete a column-
+ delete body from messages_by_user where sender = 'juju'and sent = '2013-07-21 21:04:55';
+
+delete row
+delete  from messages_by_user where sender = 'juju';
+
+delete whole table-
+truncate table <table_name>;
+ex:-truncate table messages_by_user;
+
+drop table-
+drop table <table_name>;
+drop table messages_by_user;
+
+Tombstones-
+How delete works?
+delete from home where home_id = 'H02257222';
+The data is marked for tombstones;
+then a new memcached of the table is generated and then flush it to sstable;
+nodetool flush home_security home
+sstabledump C:\cassandra\apache-cassandra-3.11.8\data\data\home_security\home-f59d5280fbfc11eaa8cec797b98edea2\md-3-big-Data.db;
+[
+  {
+    "partition" : {
+      "key" : [ "H02257222" ],
+      "position" : 0,
+      "deletion_info" : { "marked_deleted" : "2020-09-21T13:58:09.081Z", "local_delete_time" : "2020-09-21T13:58:09Z" }
+    },
+    "rows" : [ ]
+  }
+]
+
+then running compact to compact the sstable files.
+nodetool compact home_security home
+sstabledump C:\cassandra\apache-cassandra-3.11.8\data\data\home_security\home-f59d5280fbfc11eaa8cec797b98edea2\md-4-big-Data.db;
+
+TTL(Time to Live)
+
+
+INSERT INTO location (vehicle_id, date, time, latitude, longitude) VALUES ('AZWT3RSKI', '2014-05-20', '2014-05-20 11:23:55', 34.872689, -111.757373) USING TTL 30;
+INSERT INTO location (vehicle_id, date, time, latitiude, longtitude) VALUES ('AZWT3RSKI', '2014-05-20', '2014-05-20 11:23:55', 34.872689, -111.757373) USING TTL 30;
+ 
+UPDATE location USING TTL 7776000 SET latitude = 34.872689, longitude = -111.757373 WHERE vehicle_id = 'AZWT3RSKI' AND date = '2014-05-20' AND time='2014-05-20 11:23:55';
+
+
+Adding a node to the Cluster-
+Adding a node to a cluster is known as bootstrapping.
+To add a new node, it needs:-
+1> to have same cluster name as the existing nodes in the cluster;
+2> the ip address(and the network access) atleast one of the nodes in the existing cluster
+The nodes for a Cassandra cluster need to be in a a network that allows them to communicate with each other.
+In addition,as Cassandra is a distributed database,faster the network connection between the nodes,the more performant Cassandra can be.
+Recommended bandwidth is 1000 megabits(or more) per second.
+Common ports in Cassandra:
+7000 Cassandra intra-node communication
+9042 Cassandra native binary protocol client
+9160 Thrift client
+7199 JMX monitoring
+
+For the first node :-
+-Record Mask and Boardcast and Gateway and DNS (using ipconfig in cmd)
+-Assign a static ip address like 192.168.159.101 and recorded mask,boardcast,Gateway,DNS
+-Restart the system and check the ip.
+-Ping the another ip to check communication.
+-Assign a hostname to node as "vm1"
+-Add the list of all the ip addresses and host name to hosts(system) file.
+-The listen_address and rpc_address properties in the cassandra.yaml file of each node need to be assigned the IP address of the node.
+	listen_address:- 192.168.159.101(ip address of the node)
+	rpc_adddress:- 192.168.159.101
+-Seeds nodes areregular nodes that,via their IP address,provide a way for new nodes to join the cluster.
+-The IP address for at least one seed node is needed for a node to be able to join the cluster.Assign the value to cassandra.yaml
+	seeds: "192.168.159.101,192.168.159.102"
+
+For the second node-
+-Assign a static ip address like 192.168.159.102
+-Repeat the process of first node.
+
+To check whether the node:-
+-nodetool status
+
+When a node auto bootstraps,it doesnot remove the datafrom the node that had previously been responsible for the data.This is so that,if the new node were to go down shortly after coming online the data still exist.
+To tell Cassandra to delete the data that a node is no longer responsible for,the cleanup command can be used.
+bin/nodetool -h <ip address of the node > cleanup
+ex:-bin/nodetool -h 192.168.159.101 cleanup
+
+Monitoring a cluster-
+-Many,many options for monitoring a cluster are available through nodetool.
+-nodetool status,nodetool info,nodetool ring,nodetool cfstats,node cfhistograms,nodetool compactionstats
+
+Repairing Node-
+-Repair is for updating a node's data to be current.
+-This comes into play when you are using a replication factor higher than 1.
+-Reapir should be run on each node at least once within the gc_grace_seconds period of time,so that data marked as deleted on one node does not come back to life through another node,because the other node was unaware of the delete(e.g.from being down).
+-To repair nodes,the nodetool repair command can be used.
+	bin/nodetool -h <ip_address of the node> repair [Keyspace name]
+	bin/nodetool -h 192.168.159.101 repair home_security
+	
+Removing a node-
+-A node may need to remove from a cluster depending upon many reasons.
+-Designed to be fault tolerant,Cassandra handles node removel gracefully.
+-Depending on whether a node is planned for removal or has unexpectedly died,the "nodetool decommission" or "nodetool removenode" commands can be used to handle the node removal.
+
+Decommissing a node is when you choose to take a node out of service.
+nodetool -h <ip address of the node> -p 7199 decommission
+ex:- nodetool -h 192.168.159.103 -p 7199 decommission
+
+Before putting a node to the service,clean up the node.
+Delete the data,commit log and saved_Caches directories need to be cleared.
+Start cassandra on the decommissioned node
+
+To remove a dead node from the cluster, and reassign its token ranges and data,the "nodetool removenode" commnad can be used.
+-bin/nodetool removenode <hostid for the node>
+	hostid can be found from nodetool status.
+	the nodetool removenode status command can be used  to watch removenode happen.
+	
+
+User Defined function-
+Enabled by changing the following settings in cassandra.yaml file
+-Java:Set enable_user_defined_functions to true
+-JavaScrit and other languages:Set enable_scripted_user_defined_functions to true
+
+Creating a function-
+create or replace function margin (goals_for int,goals_against int)
+         returns null on null input
+         returns int language java as '
+         return Integer.valueOf(Math.abs(goals_for - goals_against));';
+
+Query to test function-
+SELECT margin(goals_for, goals_against) FROM games_by_team
+WHERE league_id='English Premier League' AND season='2015/16' and team = 'Tottenham Hotspur';
+
+select avg(margin(goals_for,goals_against)) from games_by_team WHERE league_id='English Premier League' AND season='2015/16' AND team = 'Manchester United';
+select max(margin(goals_for, goals_against)) from games_by_team WHERE league_id='English Premier League' AND season='2015/16';
+
+
+User defined Aggregates-
+SFUNC The state function that is called once for every row returned. The return value of the state function becomes the state parameter for the next call.
+
+STYPE The type of the state parameter, which must be valid CQL type.
+
+FINALFUNC an optional function called once after the state function has been called for every row. The input is the return of the last state function call.
+
+
+INITCOND sets the initial value for the state passed to the first state function call. The default value is null
+create or replace function group_and_sum_state(state map<text,int>,group text,score int)
+          called on null input
+          returns map<text,int>
+          language java as '
+          state.put(group,score + state.getOrDefault(group,0));
+          return state;'
+          ;
+create aggregate if not exists group_and_sum (text,int)
+          sfunc group_and_sum_state
+          stype map<text,int>
+          initcond {};
+
+ select group_and_sum(team,goals_for) from games_by_team
+         WHERE league_id='English Premier League' AND season='2015/16';
+
+
+CREATE OR REPLACE FUNCTION mode_state (state map<ascii,int>, goals_for int, goals_against int)
+CALLED ON NULL INPUT RETURNS map<ascii,int> LANGUAGE java AS '	
+	String key = new String (goals_for + " - " + goals_against);
+	state.put(key, 1 + state.getOrDefault(key, 0));
+	return state;
+';
+CREATE OR REPLACE FUNCTION mode_final (state map<ascii,int>)
+CALLED ON NULL INPUT RETURNS ascii LANGUAGE JAVA AS '
+	String mostCommon = null;
+	int max_count = 0;
+	for (String key : state.keySet()) {
+	int value = state.get(key);
+	if (value > max_count) { mostCommon = key;max_count = value; }}
+	return mostCommon;
+';
+CREATE AGGREGATE IF NOT EXISTS mode (int, int) 
+  SFUNC mode_state
+  STYPE map<ascii,int>
+  FINALFUNC mode_final 
+  INITCOND {};
+
+SELECT mode(goals_for,goals_against) FROM games_by_team WHERE league_id='English Premier League' AND season='2015/16';
+
+
+
+		 
+
+
+
+
