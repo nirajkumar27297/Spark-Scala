@@ -25,3 +25,9 @@ libraryDependencies += "joda-time" % "joda-time" % "2.10.6"
 // https://mvnrepository.com/artifact/com.datastax.spark/spark-cassandra-connector-driver
 libraryDependencies += "com.datastax.spark" %% "spark-cassandra-connector-driver" % "3.0.0"
 
+// https://mvnrepository.com/artifact/com.sksamuel.scapegoat/scalac-scapegoat-plugin
+libraryDependencies += "com.sksamuel.scapegoat" %% "scalac-scapegoat-plugin" % "1.3.8" % "provided"
+
+
+
+
