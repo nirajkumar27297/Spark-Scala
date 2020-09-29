@@ -56,9 +56,7 @@ object LogisticRegressionDemo extends App {
   println(s"Intercepts: \n${logRegressionModel.interceptVector}")
 
   val trainingSummary = logRegressionModel.binarySummary
-
   println("The area under ROC Curve " + trainingSummary.areaUnderROC)
-
   // Obtain the objective per iteration
   val objectiveHistory = trainingSummary.objectiveHistory
   println("objectiveHistory:")
@@ -73,6 +71,7 @@ object LogisticRegressionDemo extends App {
     s"Accuracy: $accuracy\nFPR: $falsePositiveRate\nTPR: $truePositiveRate\n" +
       s"F-measure: $fMeasure\nPrecision: $precision\nRecall: $recall"
   )
+
   import spark.implicits._
   val testPrediction = logRegressionModel.transform(test)
   val predictionAndLabels = testPrediction
