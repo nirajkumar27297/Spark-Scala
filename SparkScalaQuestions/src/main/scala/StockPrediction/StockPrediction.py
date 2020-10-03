@@ -1,11 +1,13 @@
+
 import sys
 import numpy as np
 import pandas as pd
-import pickle
+import pickleStockPredictionPythonConnectivityStockPredictionPythonConnectivity
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 import sklearn.metrics as metrics
 from sklearn.pipeline import Pipeline
+import boto3
 
 inputFile = sys.stdin
 inputDF = pd.read_csv(inputFile,header=None)
@@ -23,9 +25,11 @@ rmse = np.sqrt(metrics.mean_squared_error(y_test,y_pred))
 print("The root mean square error is {:.2f}".format(rmse))
 avgValue = np.mean(y_test)
 print("The errorValue is {:.2f} %".format(rmse / avgValue ))
-fileLocation = sys.argv[1] + "StockPricePredictionModel.pickle"
-with open(fileLocation,'wb') as f:
-    pickle.dump(lrModel,f)
+bucket='stockpredictions'
+key='StockPrice.pkl'
+pickle_byte_obj = pickle.dumps(lrModel)
+s3_resource = boto3.resource('s3')
+s3_resource.Object(bucket,key).put(Body=pickle_byte_obj)
 
 
 
