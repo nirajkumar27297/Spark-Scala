@@ -1,0 +1,26 @@
+@* login1 Template File *@
+@()(implicit request:RequestHeader)
+
+@main("Login") {
+    <h2>Login</h2>
+    <form method="get" action="validateLoginGet">
+        username:<input type="text" name="username"/>
+        password:<input type="password" name="password"/>
+        <input type="submit"/>
+    </form>
+
+    <form method="post" action="@routes.TaskList1.validateLoginPost()">
+        @helper.CSRF.formField
+        username:<input type="text" name="username"/>
+        password:<input type="password" name="password"/>
+        <input type="submit"/>
+    </form>
+
+<form method="post" action="@routes.TaskList1.createUser()">
+    @helper.CSRF.formField
+    <h1>Create User</h1>
+    username:<input type="text" name="username"/>
+    password:<input type="password" name="password"/>
+    <input type="submit"/>
+</form>
+}
