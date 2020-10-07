@@ -17,26 +17,11 @@ package StockPrediction
 
 import Configurations.configurations
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.SparkConf
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import Utility.UtilityClass
+import org.apache.spark.sql.DataFrame
 
 object StockPredictionPythonConnectivity extends App {
-  /* Function to Create Spark Session Object
-  @return SparkSession
-   */
-  def createSessionObject(): SparkSession = {
 
-    val sparkconfigurations = new SparkConf()
-      .setAppName("Stock Prediction Application")
-      .setMaster("local")
-
-    val sparkSessionObj = SparkSession
-      .builder()
-      .appName("StockPredictionPythonConnectivity")
-      .config(sparkconfigurations)
-      .getOrCreate()
-    sparkSessionObj
-  }
   /* Function for taking input
    @param Path[String]
    @return DataFrame
@@ -49,16 +34,18 @@ object StockPredictionPythonConnectivity extends App {
         .csv(path)
       inputStockPriceDF
     } catch {
-      case _: java.io.IOException =>
+      case ex: java.io.IOException =>
+        rootLogger.error(ex)
         println("The File Does not Exist")
         sparkSessionObj.emptyDataFrame
       case ex: Exception =>
-        println(ex)
+        rootLogger.error(ex)
+        println("SomeThing Unexpected Occured\n"+ex)
         sparkSessionObj.emptyDataFrame
     }
   }
   //Creating function Objects
-  val sparkSessionObj = createSessionObject()
+  val sparkSessionObj = UtilityClass.createSessionObject()
   val sparkContextObj = sparkSessionObj.sparkContext
   //Configuring Hadoop
   configurations.apply(sparkContextObj).configurationsForHadoop()
@@ -82,12 +69,15 @@ object StockPredictionPythonConnectivity extends App {
     //Printing the contents of RDD
     outputPipedRdd.foreach(println(_))
   } catch {
-    case _: ArrayIndexOutOfBoundsException =>
+    case ex: ArrayIndexOutOfBoundsException =>
+      rootLogger.error(ex)
       println("Please Enter the required Arguments")
     case ex: org.apache.spark.SparkException =>
+      rootLogger.error(ex)
       println(ex.printStackTrace())
     case ex: Exception =>
-      println(ex)
+      rootLogger.error(ex)
+      println("Something Unexpected Occured Please Try Again\n"+ex)
   } finally {
     sparkSessionObj.stop()
   }
