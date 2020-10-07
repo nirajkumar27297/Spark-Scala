@@ -45,7 +45,7 @@ object StockPredictionPythonConnectivity extends App {
     }
   }
   //Creating function Objects
-  val sparkSessionObj = UtilityClass.createSessionObject()
+  val sparkSessionObj = UtilityClass.createSessionObject("Stock Prediction Application")
   val sparkContextObj = sparkSessionObj.sparkContext
   //Configuring Hadoop
   configurations.apply(sparkContextObj).configurationsForHadoop()
