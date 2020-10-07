@@ -17,10 +17,10 @@ object UtilityClass {
   /* Function to Create Spark Session Object
   @return SparkSession
    */
-  def createSessionObject(): SparkSession = {
+  def createSessionObject(appName:String): SparkSession = {
 
     val sparkconfigurations = new SparkConf()
-      .setAppName("Stock Prediction Application")
+      .setAppName(appName)
       .setMaster("local")
 
     val sparkSessionObj = SparkSession
