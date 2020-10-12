@@ -24,12 +24,15 @@ class ClosePricePredictionController @Inject() (
   The function calls requests and return the response as json.
    */
 
-  def predictPriceJson() =
+  def predictPriceJson() = {
+
     Action { implicit request =>
       val tupleOutputMessageAndValue = predictPrice(request)
       val jsonOutput = convertToJson(tupleOutputMessageAndValue)
       Ok(jsonOutput)
     }
+  }
+
   /*
   This function converts the InputTuple to Json
   @params:inputTupleMessageAndValue Tuple2[Double,String]
@@ -39,13 +42,19 @@ class ClosePricePredictionController @Inject() (
   private def convertToJson(
       inputTupleMessageAndValue: Tuple2[Double, String]
   ): JsValue = {
-    val resultMap =
-      Map(
-        "messsage" -> inputTupleMessageAndValue._2,
-        "value" -> inputTupleMessageAndValue._1.toString,
-        "status" -> "200"
-      )
-    Json.toJson(resultMap)
+    try {
+      val resultMap =
+        Map(
+          "messsage" -> inputTupleMessageAndValue._2,
+          "value" -> inputTupleMessageAndValue._1.toString,
+          "status" -> "200"
+        )
+      Json.toJson(resultMap)
+    } catch {
+      case ex: Exception =>
+        ex.printStackTrace()
+        Json.toJson("")
+    }
   }
 
   /*
@@ -57,30 +66,37 @@ class ClosePricePredictionController @Inject() (
   private def predictPrice(
       request: Request[AnyContent]
   ): Tuple2[Double, String] = {
-    val message = "The predicted result is"
-    var closePrice: Double = 0
-    //Calling input arguments using request
-    val postvals = request.body.asFormUrlEncoded
-    //Creating a sparkSessionObj
-    val sparkSessionObj =
-      Utility.UtilityClass.createSessionObject("Stock Prediction")
-    postvals
-      .map { args =>
-        val openPrice = args("OpenPrice").head.toDouble
-        val highPrice = args("HighPrice").head.toDouble
-        val lowPrice = args("LowPrice").head.toDouble
-        val volume = args("Volume").head.toDouble
-        //Calling the
-        closePrice = models.StockPricePredictionPythonModel.predictPrice(
-          openPrice,
-          highPrice,
-          lowPrice,
-          volume,
-          sparkSessionObj
-        )
-      }
-      .getOrElse(Redirect(routes.ClosePricePredictionController.homePage()))
-    (closePrice, message)
+    try {
+      val message = "The predicted result is"
+      var closePrice: Double = 0
+      //Calling input arguments using request
+      val postvals = request.body.asFormUrlEncoded
+      //Creating a sparkSessionObj
+      val sparkSessionObj =
+        Utility.UtilityClass.createSessionObject("Stock Prediction")
+      postvals
+        .map { args =>
+          val openPrice = args("OpenPrice").head.toDouble
+          val highPrice = args("HighPrice").head.toDouble
+          val lowPrice = args("LowPrice").head.toDouble
+          val volume = args("Volume").head.toDouble
+          //Calling the
+          closePrice = models.StockPricePredictionPythonModel.predictPrice(
+            openPrice,
+            highPrice,
+            lowPrice,
+            volume,
+            sparkSessionObj
+          )
+        }
+        .getOrElse(Redirect(routes.ClosePricePredictionController.homePage()))
+
+      (closePrice, message)
+    } catch {
+      case ex: Exception =>
+        ex.printStackTrace()
+        (1.0, "")
+    }
   }
   /*
  This function converts the InputTuple to XML
@@ -98,6 +114,7 @@ class ClosePricePredictionController @Inject() (
       val xmlOutput = convertToXML(tupleOutputMessageAndValue)
       Ok(xmlOutput).as("text/xml")
     }
+
   /*
 This function converts the InputTuple to String for XML reponse
 @params:inputTupleMessageAndValue Tuple2[Double,String]
@@ -112,8 +129,9 @@ This function converts the InputTuple to String for XML reponse
   This function redirects to index page i.e. homePage
    */
 
-  def homePage() =
+  def homePage() = {
     Action { implicit request =>
       Ok(views.html.index())
     }
+  }
 }
