@@ -1,0 +1,17 @@
+@()
+
+@main("Welcome to Stock Prediction") {
+  <link rel="stylesheet" href="./stockprediction/public/stylesheets/main.css">
+  <h1>Welcome to Stock Prediction</h1>
+  <form method="post" action="@routes.ClosePricePredictionController.predictPriceJson()">
+    <div class = "inputFields">
+  OpenPrice:<input type = "text"  name = "OpenPrice" placeholder="OpenPrice....">
+  HighPrice:<input type = "text"  name = "HighPrice" placeholder="HighPrice....">
+  LowPrice:<input type = "text"  name = "LowPrice" placeholder="LowPrice....">
+  Volume:<input type = "text"  name = "Volume" placeholder="Volume....">
+    </div>
+    <br>
+    <button type="submit" class = "buttonType">JsonOutput</button>
+    <button type = "submit" class = "buttonType" formaction="@routes.ClosePricePredictionController.predictPriceXml()">XmlOutput</button>
+  </form>
+}
