@@ -34,6 +34,7 @@ object StockPricePredictionPythonModel {
       .pipe(command)
     //Collecting the result from the output RDD.
     val predictedClosePrice = predictedPriceRDD.collect().apply(0)
+
     //Scaling the Predicted Close Price to 2 decimal places and returning it
     BigDecimal(predictedClosePrice)
       .setScale(2, BigDecimal.RoundingMode.HALF_UP)

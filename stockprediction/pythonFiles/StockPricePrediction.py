@@ -32,8 +32,10 @@ try:
     sys.stdout.write(str(predictedClosePrice[0]))
 
 except FileNotFoundError:
-    print("Something Unexpected Occured")
-except:
-    print("Something Unexpected Occured")
+    sys.stdout.write(str(-sys.maxsize))
+    print("The pickle file doesnot exist")
+except ex:
+    sys.stdout.write(str(-sys.maxsize))
+    print(ex,"\n Something Unexpected Occured")
 
 
