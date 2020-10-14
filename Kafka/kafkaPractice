@@ -1,0 +1,84 @@
+To start a kafka Server-
+
+First Start ZooKeeper Server-
+bin/zookeeper-server-start.sh config/zookeeper.properties
+
+Then Start Kafka Server-
+bin/kafka-server-start.sh config/server.properties 
+
+Creating a topic-
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic Example1
+
+Seeing the list of topics-
+bin/kafka-topics.sh --list --zookeeper localhost:2181
+
+Starting Producer-
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic Example1
+
+
+Starting Consumer-
+bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic Example1 --from-beginning
+
+
+Configuring Single Nodes-
+
+One Broker-
+1>In config/server.properties change
+advertised.listeners=PLAINTEXT://localhost:9092
+zookeeper.connect=<ipaddress/localhost>:2181
+
+
+
+
+
+
+
+Multi Broker-
+1>Copy the contents of config/server.properties into config/server1.properties and config/server2.properties
+
+2>Open the server1.properties
+	broker.id = 1
+	listeners=PLAINTEXT://:9093
+	log.dirs = /tmp/kafka-logs1
+3>Open the server1.properties
+	broker.id = 2
+	listeners=PLAINTEXT://:9094
+	log.dirs = /tmp/kafka-logs2
+
+3>load the multiple brokers
+bin/kafka-server-start.sh config/server1.properties 
+bin/kafka-server-start.sh config/server2.properties 
+
+4> Create a kafka topic
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 2 --partitions 3 --topic Example2
+
+The describe command is used to check which broker is listening on the current created topic
+
+5> Start the producer
+bin/kafka-console-producer.sh --broker-list localhost:9092,localhost:9093,localhost:9094 --topic Example2
+
+6>Start the consumer
+bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic Example1 --from-beginning
+
+Altering a topic-
+bin/kafka-topics.sh --alter --zookeeper localhost:2181 --replication-factor 1 --partitions 2 --topic Example1
+
+Delete a topic
+bin/kafka-topics.sh --zookeeper localhost:2181 --delete --topic Example1
+
+
+
+WordCountProblem in Kafka-
+1>Starting kafka and ZooKeeper Server.
+2>Creating input topic
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic streams-plaintext-input
+3>Creating output topic
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic streams-wordcount-output
+4>Calling WordCountProgram
+bin/kafka-run-class.sh org.apache.kafka.streams.examples.wordcount.WordCountDemo
+5>Starting Producer
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic streams-plaintext-input
+6>Starting Consumer
+bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic streams-wordcount-output --from-beginning --formatter kafka.tools.DefaultMessageFormatter --property print.key=true --property print.value=true --property key.deserializer=org.apache.kafka.common.serialization.StringDeserializer --property value.deserializer=org.apache.kafka.common.serialization.LongDeserializer
+
+
