@@ -1,11 +1,10 @@
 import Utility.UtilityClass
 import org.apache.spark.ml.PipelineModel
-import org.apache.spark.sql.{DataFrame}
-import org.apache.spark.sql.functions.{col, from_json}
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.functions.{col, from_json, lit}
 import org.apache.spark.sql.types.{DoubleType, StringType, StructType}
 object StockPredictionKafkaStructuredStreaming extends App {
   val brokers = args(0)
-  val groupId = "GRP1"
   val topics = args(1)
 
   val sparkSessionObj = UtilityClass.createSessionObject("StockPrediction")
@@ -13,8 +12,7 @@ object StockPredictionKafkaStructuredStreaming extends App {
   import sparkSessionObj.implicits._
   val streamedDataFrame = takingInput()
   val preprocessedDataFrame = preProcessing(streamedDataFrame)
-  val predictedClosePrice = predictingPrice(preprocessedDataFrame)
-  writeToOutputStream(predictedClosePrice)
+  writeToOutputStream(preprocessedDataFrame)
 
   def takingInput(): DataFrame = {
     val inputDataFrame = sparkSessionObj.readStream
@@ -69,7 +67,7 @@ object StockPredictionKafkaStructuredStreaming extends App {
       inputDataFrame: DataFrame
   ): DataFrame = {
     val linearRegressionModel =
-      PipelineModel.load("./model")
+      PipelineModel.load("./MachineLearningModel/model")
     //Applying the model to our Input DataFrame
     val predictedDataFrame = linearRegressionModel.transform(inputDataFrame)
     //Extracting the Predicted Close Price from the Output DataFrame
@@ -81,32 +79,58 @@ object StockPredictionKafkaStructuredStreaming extends App {
       inputDataFrame: DataFrame
   ): DataFrame = {
     val command = "python3 ./pythonFiles/StockPricePrediction.py"
-//    //creating rdd with the input files,repartitioning the rdd and passing the command using pipe
-    val predictedPriceRDD = inputDataFrame.rdd
-      .pipe(command)
-//    //Collecting the result from the output RDD.
-    predictedPriceRDD.toDF().show()
-    predictedPriceRDD.toDF()
+    // creating rdd with the input files,repartitioning the rdd and passing the command using pipe
+    if (inputDataFrame.isEmpty == false) {
+
+      val predictedPriceRDD =
+        inputDataFrame.rdd
+          .repartition(1)
+          .pipe(command)
+      //Collecting the result from the output RDD.
+      val predictedPrice = predictedPriceRDD.collect().apply(0)
+      val scaledPredictedPrice = BigDecimal(predictedPrice)
+        .setScale(2, BigDecimal.RoundingMode.HALF_UP)
+        .toDouble
+      val predictedColumnDataFrame =
+        inputDataFrame.withColumn("prediction", lit(scaledPredictedPrice))
+      predictedColumnDataFrame
+    } else {
+      println("Empty DataFrame")
+      sparkSessionObj.emptyDataFrame
+    }
   }
 
-  def predictingPrice(inputDataFrame: DataFrame): DataFrame = {
-    val predictedDataFrame = loadingLinearRegressionModelSpark(inputDataFrame)
-    val predictedClosePrice = predictedDataFrame.select(
-      col("prediction").alias("Predicted Close Price"),
-      col("Open"),
-      col("Low"),
-      col("High"),
-      col("Volume")
+  def predictingPrice(
+      inputDataFrame: DataFrame
+  ): Unit = {
+    inputDataFrame.show()
+    val predictedDataFrame = loadingLinearRegressionModelPython(
+      inputDataFrame
     )
-    predictedClosePrice
+    if (predictedDataFrame.isEmpty == false) {
+      val predictedColumnDataFrame = predictedDataFrame.select(
+        col("prediction").alias("Predicted Close Price"),
+        col("Open"),
+        col("Low"),
+        col("High"),
+        col("Volume")
+      )
+      predictedColumnDataFrame.show()
+      predictedColumnDataFrame.write
+        .mode("append")
+        .option("header", true)
+        .csv(
+          args(2)
+        )
+    }
   }
 
   def writeToOutputStream(inputDataFrame: DataFrame): Unit = {
-    val outputQuery = inputDataFrame.writeStream
-      .format("console")
-      .outputMode("update")
+    val _ = inputDataFrame.writeStream
+      .foreachBatch { (batchDF: DataFrame, _: Long) =>
+        predictingPrice(batchDF)
+      }
       .start()
       .awaitTermination()
   }
-
 }

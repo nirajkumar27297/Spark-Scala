@@ -18,19 +18,18 @@ import pickle
 
 # Taking Input Through Standard Input
 inputStockPriceFile = sys.stdin
-
-# Creating dataframe from standard input and transposing it
+#Creating dataframe from standard input
 inputStockPriceDF = pd.read_csv(inputStockPriceFile, header=None)
 # Providing name to the columns
-inputStockPriceDF.columns = {"Open", "High", "Low", "Volume"}
-print(inputStockPriceDF.head(10))
-# inputStockPriceDF["Volume"] = inputStockPriceDF["Volume"].apply(lambda x : x.replace("]",""))
-# inputStockPriceDF["Open"] = inputStockPriceDF["Open"].apply(lambda x : x.replace("[",""))
-# # Loading the dumped LinearRegressionModel pickle file
-# with open("./MachineLearningModel/PythonModel/StockPriceModel.pkl", "rb") as modelFile:
-#     linearRegressionModel = pickle.load(modelFile)
-#
-# # Predicting the stock close price
-# predictedClosePrice = linearRegressionModel.predict(inputStockPriceDF)
-# # Returning the output through standard output
-# sys.stdout.write(str(-2))
+inputStockPriceDF.rename(columns = {0:"Open",1:"High",2:"Low",3:"Volume"},inplace = True)
+
+inputStockPriceDF["Volume"] = inputStockPriceDF["Volume"].apply(lambda x : x.replace("]",""))
+inputStockPriceDF["Open"] = inputStockPriceDF["Open"].apply(lambda x : x.replace("[",""))
+#Loading the dumped LinearRegressionModel pickle file
+with open("./MachineLearningModel/PythonModel/StockPriceModel.pkl", "rb") as modelFile:
+    linearRegressionModel = pickle.load(modelFile)
+
+# Predicting the stock close price
+predictedClosePrice = linearRegressionModel.predict(inputStockPriceDF)
+# Returning the output through standard output
+sys.stdout.write(str(predictedClosePrice[0]))
