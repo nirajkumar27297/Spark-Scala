@@ -17,14 +17,15 @@ object UtilityClass {
    */
   def createSessionObject(appName: String): SparkSession = {
 
-    val sparkconfigurations = new SparkConf()
+    val sparkConfigurations = new SparkConf()
       .setAppName(appName)
       .setMaster("local")
+      .set("spark.streaming.kafka.maxRatePerPartition", "1")
+      .set("spark.streaming.stopGracefullyOnShutdown", "true")
 
     val sparkSessionObj = SparkSession
       .builder()
-      .appName("StockPredictionPythonConnectivity")
-      .config(sparkconfigurations)
+      .config(sparkConfigurations)
       .getOrCreate()
     sparkSessionObj
   }
