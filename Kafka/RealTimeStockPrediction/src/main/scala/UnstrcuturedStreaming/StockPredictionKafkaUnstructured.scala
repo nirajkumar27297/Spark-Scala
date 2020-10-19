@@ -61,6 +61,12 @@ object StockPredictionKafkaUnstructured extends App {
     jsonStrings.foreach { jsonString => getClosePrice(jsonString) }
   }
 
+  /**
+    *
+    * @param inputDataFrame
+    * @return
+    */
+
   private def loadingLinearRegressionModelPython(
       inputDataFrame: DataFrame
   ): DataFrame = {
@@ -82,6 +88,12 @@ object StockPredictionKafkaUnstructured extends App {
     predictedColumnDataFrame
   }
 
+  /**
+    *
+    * @param inputDataFrame
+    * @return
+    */
+
   private def castingDataTypeOfDataFrame(
       inputDataFrame: DataFrame
   ): DataFrame = {
@@ -93,6 +105,12 @@ object StockPredictionKafkaUnstructured extends App {
     )
     castedDataFrame
   }
+
+  /**
+    *
+    * @param jsonString
+    * @return
+    */
 
   private def creatingDataFrameFromJsonString(jsonString: String): DataFrame = {
     import spark.implicits._
@@ -106,6 +124,11 @@ object StockPredictionKafkaUnstructured extends App {
     jsonDataFrame
 
   }
+
+  /**
+    *
+    * @param jsonString
+    */
 
   private def getClosePrice(jsonString: String) = {
     val jsonDataFrame = creatingDataFrameFromJsonString(jsonString)
