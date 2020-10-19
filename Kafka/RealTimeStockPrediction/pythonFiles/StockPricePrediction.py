@@ -22,7 +22,7 @@ inputStockPriceFile = sys.stdin
 inputStockPriceDF = pd.read_csv(inputStockPriceFile, header=None)
 # Providing name to the columns
 inputStockPriceDF.rename(columns = {0:"Open",1:"High",2:"Low",3:"Volume"},inplace = True)
-
+#Cleanising the Volume and Open Columns
 inputStockPriceDF["Volume"] = inputStockPriceDF["Volume"].apply(lambda x : x.replace("]",""))
 inputStockPriceDF["Open"] = inputStockPriceDF["Open"].apply(lambda x : x.replace("[",""))
 #Loading the dumped LinearRegressionModel pickle file
@@ -31,5 +31,6 @@ with open("./MachineLearningModel/PythonModel/StockPriceModel.pkl", "rb") as mod
 
 # Predicting the stock close price
 predictedClosePrice = linearRegressionModel.predict(inputStockPriceDF)
-# Returning the output through standard output
-sys.stdout.write(str(predictedClosePrice[0]))
+# Printing  the output through standard output
+for closePrice in predictedClosePrice:
+    print(round(closePrice,2))
