@@ -19,7 +19,7 @@ package SparkStructuredStreaming
 import Utility.UtilityClass
 import org.apache.log4j.Logger
 import org.apache.spark.ml.PipelineModel
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.sql.functions.{col, from_json}
 import org.apache.spark.sql.streaming.Trigger
 import org.apache.spark.sql.types.{
@@ -41,30 +41,44 @@ import org.apache.spark.sql.types.{
   * 8> writeToOutputStream
   */
 object StockPredictionKafkaStructuredStreaming extends App {
-  // Taking Input From command line arguments
-  val brokers = args(0)
-  val topics = args(1)
-  //Creating Spark Session Object
-  val sparkSessionObj = UtilityClass.createSessionObject("StockPrediction")
+  val sparkSessionObj =
+    UtilityClass.createSessionObject("Real Time Stock Prediction")
+  val structuredStreamingObj = new StockPredictionKafkaStructuredStreaming(
+    sparkSessionObj
+  )
+  val streamedDataFrame = structuredStreamingObj.takingInput(args(0), args(1))
+  val preprocessedDataFrame =
+    structuredStreamingObj.preProcessing(streamedDataFrame)
+  structuredStreamingObj.writeToOutputStream(preprocessedDataFrame, args(2))
+}
+
+class StockPredictionKafkaStructuredStreaming(
+    sparkSessionObj: SparkSession
+) {
   //Configuring log4j
   @transient lazy val logger: Logger = Logger.getLogger(getClass.getName)
-  val streamedDataFrame = takingInput()
-  val preprocessedDataFrame = preProcessing(streamedDataFrame)
-  writeToOutputStream(preprocessedDataFrame)
 
   /**
     * The objective the function to take input from kafka source and return dataframe
     * @return inputDataFrame [DataFrame]
     */
-  def takingInput(): DataFrame = {
+  def takingInput(brokers: String, topics: String): DataFrame = {
     logger.info("Taking Input From Kafka Topic")
-    val inputDataFrame = sparkSessionObj.readStream
-      .format("kafka")
-      .option("kafka.bootstrap.servers", brokers)
-      .option("subscribe", topics)
-      .option("startingOffsets", "earliest")
-      .load()
-    inputDataFrame
+    try {
+
+      val inputDataFrame = sparkSessionObj.readStream
+        .format("kafka")
+        .option("kafka.bootstrap.servers", brokers)
+        .option("subscribe", topics)
+        .option("startingOffsets", "earliest")
+        .load()
+      inputDataFrame
+    } catch {
+      case ex: Exception =>
+        ex.printStackTrace()
+        logger.info("Difficulty in taking Input")
+        throw new Exception("Difficulty in taking Input")
+    }
   }
 
   /**
@@ -77,32 +91,42 @@ object StockPredictionKafkaStructuredStreaming extends App {
   private def creatingDataFrameFromJson(
       inputDataFrame: DataFrame
   ): DataFrame = {
-    logger.info("Creating Json DataFrame from Kafka Topic Message")
-    // Defining Schema for dataframe
-    val schema = new StructType()
-      .add("1. open", StringType, true)
-      .add("2. high", StringType, true)
-      .add("3. low", StringType, true)
-      .add("4. close", StringType, true)
-      .add("5. volume", StringType, true)
+    try {
 
-    /* Taking only the value column which is a json string  from inputDataFrame and creating
+      logger.info("Creating Json DataFrame from Kafka Topic Message")
+      // Defining Schema for dataframe
+      val schema = new StructType()
+        .add("1. open", StringType, true)
+        .add("2. high", StringType, true)
+        .add("3. low", StringType, true)
+        .add("4. close", StringType, true)
+        .add("5. volume", StringType, true)
+
+      /* Taking only the value column which is a json string  from inputDataFrame and creating
          dataframe from the json String
        as well renaming the column
-     */
+       */
 
-    val columnsRenamedDataFrame = inputDataFrame
-      .select(
-        from_json(col("value").cast("string"), schema)
-          .as("jsonData")
-      )
-      .selectExpr("jsonData.*")
-      .withColumnRenamed("1. open", "Open")
-      .withColumnRenamed("2. high", "High")
-      .withColumnRenamed("3. low", "Low")
-      .withColumnRenamed("4. close", "Close")
-      .withColumnRenamed("5. volume", "Volume")
-    columnsRenamedDataFrame
+      val columnsRenamedDataFrame = inputDataFrame
+        .select(
+          from_json(col("value").cast("string"), schema)
+            .as("jsonData")
+        )
+        .selectExpr("jsonData.*")
+        .withColumnRenamed("1. open", "Open")
+        .withColumnRenamed("2. high", "High")
+        .withColumnRenamed("3. low", "Low")
+        .withColumnRenamed("4. close", "Close")
+        .withColumnRenamed("5. volume", "Volume")
+      columnsRenamedDataFrame
+    } catch {
+      case ex: Exception =>
+        ex.printStackTrace()
+        logger.info("Difficulty in creating dataframe fron kafka topic message")
+        throw new Exception(
+          "Difficulty in creating dataframe fron kafka topic message"
+        )
+    }
 
   }
 
@@ -112,15 +136,24 @@ object StockPredictionKafkaStructuredStreaming extends App {
     * @return castedDataFrame [DataFRame]
     */
   private def castingDataColumns(inputDataFrame: DataFrame): DataFrame = {
-    logger.info("Casting DataFrame to Appropriate data types")
-    //Casting the dataframe to appropriate data types
-    val castedDataFrame = inputDataFrame.select(
-      col("Open").cast(DoubleType),
-      col("High").cast(DoubleType),
-      col("Low").cast(DoubleType),
-      col("Volume").cast(DoubleType)
-    )
-    castedDataFrame
+    try {
+      logger.info("Casting DataFrame to Appropriate data types")
+      //Casting the dataframe to appropriate data types
+      val castedDataFrame = inputDataFrame.select(
+        col("Open").cast(DoubleType),
+        col("High").cast(DoubleType),
+        col("Low").cast(DoubleType),
+        col("Volume").cast(DoubleType)
+      )
+      castedDataFrame
+    } catch {
+      case ex: Exception =>
+        ex.printStackTrace()
+        logger.info("Difficulty in Casting DataFrame to Appropriate data types")
+        throw new Exception(
+          "Difficulty in Casting DataFrame to Appropriate data types"
+        )
+    }
   }
 
   /**
@@ -146,13 +179,21 @@ object StockPredictionKafkaStructuredStreaming extends App {
   private def loadingLinearRegressionModelSpark(
       inputDataFrame: DataFrame
   ): DataFrame = {
-    logger.info("Predicting Close Price Using Spark Model")
-    val linearRegressionModel =
-      PipelineModel.load("./MachineLearningModel/model")
-    //Applying the model to our Input DataFrame
-    val predictedDataFrame = linearRegressionModel.transform(inputDataFrame)
-    //Extracting the Predicted Close Price from the Output DataFrame
-    predictedDataFrame
+    try {
+      logger.info("Predicting Close Price Using Spark Model")
+      val linearRegressionModel =
+        PipelineModel.load("./MachineLearningModel/model")
+      //Applying the model to our Input DataFrame
+      val predictedDataFrame = linearRegressionModel.transform(inputDataFrame)
+      //Extracting the Predicted Close Price from the Output DataFrame
+      predictedDataFrame
+
+    } catch {
+      case ex: Exception =>
+        ex.printStackTrace()
+        logger.info("Difficulty in loading spark model")
+        throw new Exception("Difficulty in loading spark model")
+    }
 
   }
 
@@ -163,38 +204,47 @@ object StockPredictionKafkaStructuredStreaming extends App {
     * @return predictedStockPriceDataFrame [DataFrame]
     */
 
-  private def loadingLinearRegressionModelPython(
+  def loadingLinearRegressionModelPython(
       inputDataFrame: DataFrame
   ): DataFrame = {
-    logger.info("Predicting Close Price Using Python Model")
+    try {
+      logger.info("Predicting Close Price Using Python Model")
 
-    val command = "python3 ./pythonFiles/StockPricePrediction.py"
-    // creating rdd with the input files,repartitioning the rdd and passing the command using pipe
+      val command = "python3 ./pythonFiles/StockPricePrediction.py"
+      // creating rdd with the input files,repartitioning the rdd and passing the command using pipe
 
-    val predictedPriceRDD =
-      inputDataFrame.rdd
-        .repartition(1)
-        .pipe(command)
-    //Collecting the result from the output RDD and converting it to Double
-    val predictedPrice =
-      predictedPriceRDD.collect().toList.map(elements => elements.toDouble)
-    //Creating a new dataframe with new predicted value Column
-    val predictedStockPriceDataFrame = sparkSessionObj.createDataFrame(
-      // Adding New Column
-      inputDataFrame.rdd.zipWithIndex.map {
-        case (row, columnIndex) =>
-          Row.fromSeq(row.toSeq :+ predictedPrice(columnIndex.toInt))
-      },
-      // Create schema
-      StructType(
-        inputDataFrame.schema.fields :+ StructField(
-          "Predicted Close Price",
-          DoubleType,
-          false
+      val predictedPriceRDD =
+        inputDataFrame.rdd
+          .repartition(1)
+          .pipe(command)
+      //Collecting the result from the output RDD and converting it to Double
+      val predictedPrice =
+        predictedPriceRDD.collect().toList.map(elements => elements.toDouble)
+      //Creating a new dataframe with new predicted value Column
+      val predictedStockPriceDataFrame = sparkSessionObj.createDataFrame(
+        // Adding New Column
+        inputDataFrame.rdd.zipWithIndex.map {
+          case (row, columnIndex) =>
+            Row.fromSeq(row.toSeq :+ predictedPrice(columnIndex.toInt))
+        },
+        // Create schema
+        StructType(
+          inputDataFrame.schema.fields :+ StructField(
+            "Predicted Close Price",
+            DoubleType,
+            false
+          )
         )
       )
-    )
-    predictedStockPriceDataFrame
+      predictedStockPriceDataFrame
+    } catch {
+      case ex: Exception =>
+        ex.printStackTrace()
+        logger.info("Difficulty in Predicting Close Price Using Python Model")
+        throw new Exception(
+          "Difficulty in Predicting Close Price Using Python Model"
+        )
+    }
   }
 
   /**
@@ -203,21 +253,35 @@ object StockPredictionKafkaStructuredStreaming extends App {
     * @param inputDataFrame [DataFrame]
     */
   def predictingPrice(
-      inputDataFrame: DataFrame
+      inputDataFrame: DataFrame,
+      pathToSave: String
   ): Unit = {
-    val predictedClosePriceDataFrame = loadingLinearRegressionModelPython(
-      inputDataFrame
-    )
-    if (predictedClosePriceDataFrame.isEmpty == false) {
-      predictedClosePriceDataFrame.printSchema()
-      predictedClosePriceDataFrame.show()
-      logger.info("Saving the predicted Price in the following path" + args(2))
-      //Saving the output dataframe as csv in the bprovided path
-      predictedClosePriceDataFrame.write
-        .mode("append")
-        .option("header", true)
-        .csv(
-          args(2)
+    try {
+      val predictedClosePriceDataFrame = loadingLinearRegressionModelPython(
+        inputDataFrame
+      )
+      if (predictedClosePriceDataFrame.isEmpty == false) {
+        predictedClosePriceDataFrame.printSchema()
+        predictedClosePriceDataFrame.show()
+        logger.info(
+          "Saving the predicted Price in the following path" + pathToSave
+        )
+        //Saving the output dataframe as csv in the provided path
+        predictedClosePriceDataFrame.write
+          .mode("append")
+          .option("header", true)
+          .csv(
+            pathToSave
+          )
+      }
+    } catch {
+      case _: ArrayIndexOutOfBoundsException =>
+        println("Provide the path argument")
+      case ex: Exception =>
+        ex.printStackTrace()
+        logger.info("Saving the predicted Price in the provided path")
+        throw new Exception(
+          "Saving the predicted Price in the following path"
         )
     }
   }
@@ -228,12 +292,15 @@ object StockPredictionKafkaStructuredStreaming extends App {
     * The stream will wait for 5 minutes and terminate if no input is provided
     * @param inputDataFrame [DataFrame]
     */
-  def writeToOutputStream(inputDataFrame: DataFrame): Unit = {
+  def writeToOutputStream(
+      inputDataFrame: DataFrame,
+      pathToSave: String
+  ): Unit = {
     logger.info("Writing to Output Stream")
     val query = inputDataFrame.writeStream
       .foreachBatch { (batchDataFrame: DataFrame, batchID: Long) =>
         println("Running for tha batch " + batchID)
-        predictingPrice(batchDataFrame)
+        predictingPrice(batchDataFrame, pathToSave)
       }
       .queryName("Real Time Stock Prediction Query")
       .option("checkpointLocation", "chk-point-dir")
