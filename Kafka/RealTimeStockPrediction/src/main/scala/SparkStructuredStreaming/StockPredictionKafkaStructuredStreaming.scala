@@ -49,7 +49,11 @@ object StockPredictionKafkaStructuredStreaming extends App {
   val streamedDataFrame = structuredStreamingObj.takingInput(args(0), args(1))
   val preprocessedDataFrame =
     structuredStreamingObj.preProcessing(streamedDataFrame)
-  structuredStreamingObj.writeToOutputStream(preprocessedDataFrame, args(2))
+  structuredStreamingObj.writeToOutputStream(
+    preprocessedDataFrame,
+    args(2),
+    args(3)
+  )
 }
 
 class StockPredictionKafkaStructuredStreaming(
@@ -96,11 +100,11 @@ class StockPredictionKafkaStructuredStreaming(
       logger.info("Creating Json DataFrame from Kafka Topic Message")
       // Defining Schema for dataframe
       val schema = new StructType()
-        .add("1. open", StringType, true)
-        .add("2. high", StringType, true)
-        .add("3. low", StringType, true)
-        .add("4. close", StringType, true)
-        .add("5. volume", StringType, true)
+        .add("1. open", StringType, false)
+        .add("2. high", StringType, false)
+        .add("3. low", StringType, false)
+        .add("4. close", StringType, false)
+        .add("5. volume", StringType, false)
 
       /* Taking only the value column which is a json string  from inputDataFrame and creating
          dataframe from the json String
@@ -127,7 +131,6 @@ class StockPredictionKafkaStructuredStreaming(
           "Difficulty in creating dataframe fron kafka topic message"
         )
     }
-
   }
 
   /**
@@ -136,24 +139,15 @@ class StockPredictionKafkaStructuredStreaming(
     * @return castedDataFrame [DataFRame]
     */
   private def castingDataColumns(inputDataFrame: DataFrame): DataFrame = {
-    try {
-      logger.info("Casting DataFrame to Appropriate data types")
-      //Casting the dataframe to appropriate data types
-      val castedDataFrame = inputDataFrame.select(
-        col("Open").cast(DoubleType),
-        col("High").cast(DoubleType),
-        col("Low").cast(DoubleType),
-        col("Volume").cast(DoubleType)
-      )
-      castedDataFrame
-    } catch {
-      case ex: Exception =>
-        ex.printStackTrace()
-        logger.info("Difficulty in Casting DataFrame to Appropriate data types")
-        throw new Exception(
-          "Difficulty in Casting DataFrame to Appropriate data types"
-        )
-    }
+    logger.info("Casting DataFrame to Appropriate data types")
+    //Casting the dataframe to appropriate data types
+    val castedDataFrame = inputDataFrame.select(
+      col("Open").cast(DoubleType),
+      col("High").cast(DoubleType),
+      col("Low").cast(DoubleType),
+      col("Volume").cast(DoubleType)
+    )
+    castedDataFrame
   }
 
   /**
@@ -194,7 +188,6 @@ class StockPredictionKafkaStructuredStreaming(
         logger.info("Difficulty in loading spark model")
         throw new Exception("Difficulty in loading spark model")
     }
-
   }
 
   /**
@@ -205,18 +198,13 @@ class StockPredictionKafkaStructuredStreaming(
     */
 
   def loadingLinearRegressionModelPython(
-      inputDataFrame: DataFrame
+      inputDataFrame: DataFrame,
+      pythonFilePath: String
   ): DataFrame = {
     try {
       logger.info("Predicting Close Price Using Python Model")
-
-      val command = "python3 ./pythonFiles/StockPricePrediction.py"
-      // creating rdd with the input files,repartitioning the rdd and passing the command using pipe
-
       val predictedPriceRDD =
-        inputDataFrame.rdd
-          .repartition(1)
-          .pipe(command)
+        UtilityClass.runPythonCommand(pythonFilePath, inputDataFrame)
       //Collecting the result from the output RDD and converting it to Double
       val predictedPrice =
         predictedPriceRDD.collect().toList.map(elements => elements.toDouble)
@@ -254,11 +242,13 @@ class StockPredictionKafkaStructuredStreaming(
     */
   def predictingPrice(
       inputDataFrame: DataFrame,
-      pathToSave: String
+      pathToSave: String,
+      pythonFilePath: String
   ): Unit = {
     try {
       val predictedClosePriceDataFrame = loadingLinearRegressionModelPython(
-        inputDataFrame
+        inputDataFrame,
+        pythonFilePath
       )
       if (predictedClosePriceDataFrame.isEmpty == false) {
         predictedClosePriceDataFrame.printSchema()
@@ -279,9 +269,11 @@ class StockPredictionKafkaStructuredStreaming(
         println("Provide the path argument")
       case ex: Exception =>
         ex.printStackTrace()
-        logger.info("Saving the predicted Price in the provided path")
+        logger.info(
+          "Difficulty in Saving the predicted Price in the provided path"
+        )
         throw new Exception(
-          "Saving the predicted Price in the following path"
+          "Difficulty in Saving the predicted Price in the following path"
         )
     }
   }
@@ -294,19 +286,29 @@ class StockPredictionKafkaStructuredStreaming(
     */
   def writeToOutputStream(
       inputDataFrame: DataFrame,
-      pathToSave: String
+      pathToSave: String,
+      pythonFilePath: String
   ): Unit = {
-    logger.info("Writing to Output Stream")
-    val query = inputDataFrame.writeStream
-      .foreachBatch { (batchDataFrame: DataFrame, batchID: Long) =>
-        println("Running for tha batch " + batchID)
-        predictingPrice(batchDataFrame, pathToSave)
-      }
-      .queryName("Real Time Stock Prediction Query")
-      .option("checkpointLocation", "chk-point-dir")
-      .trigger(Trigger.ProcessingTime("5 seconds"))
-      .start()
-    logger.info("Terminating the Streaming Services")
-    query.awaitTermination(300000)
+    try {
+      logger.info("Writing to Output Stream")
+      val query = inputDataFrame.writeStream
+        .foreachBatch { (batchDataFrame: DataFrame, batchID: Long) =>
+          println("Running for tha batch " + batchID)
+          predictingPrice(batchDataFrame, pathToSave, pythonFilePath)
+        }
+        .queryName("Real Time Stock Prediction Query")
+        .option("checkpointLocation", "chk-point-dir")
+        .trigger(Trigger.ProcessingTime("5 seconds"))
+        .start()
+      logger.info("Terminating the Streaming Services")
+      query.awaitTermination(300000)
+    } catch {
+      case ex: Exception =>
+        ex.printStackTrace()
+        logger.info("Difficulty in Writing to Output Stream")
+        throw new Exception(
+          "Difficulty in Writing to Output Stream"
+        )
+    }
   }
 }

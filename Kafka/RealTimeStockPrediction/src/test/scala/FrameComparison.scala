@@ -9,18 +9,15 @@ class FrameComparison {
     if (
       firstDataFrame.schema
         .toString()
-        .equalsIgnoreCase(secondDataFrame.schema.toString()) == false
-    ) {
-      return false
-    }
-    if (
+        .equalsIgnoreCase(secondDataFrame.schema.toString())
+      &&
       firstDataFrame
         .unionAll(secondDataFrame)
         .except(firstDataFrame.intersect(secondDataFrame))
-        .count() != 0
+        .count() == 0
     ) {
-      return false
+      return true
     }
-    true
+    false
   }
 }

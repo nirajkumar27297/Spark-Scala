@@ -9,6 +9,7 @@
 package Producer
 import java.util.Properties
 
+import Utility.UtilityClass.createKafkaProducer
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
@@ -36,7 +37,7 @@ object ProducerScript extends App {
     "https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&interval=1min&symbol=" + companyName + "&apikey=" + api_key
   val data = getRestContent(url)
   val stockData = parsingData(data)
-  val kafkaProducer = setProducerProperties()
+  val kafkaProducer = createKafkaProducer(brokers)
   sendingDataToKafkaTopic(stockData, kafkaProducer)
 
   /**
@@ -63,38 +64,6 @@ object ProducerScript extends App {
         ex.printStackTrace()
         logger.info("Difficulty in getting Contents")
         throw new Exception("Difficulty in getting Contents")
-    }
-  }
-
-  /**
-    * The function sets the Kafka Producer Properties and return a kafka producer
-    * @return producer KafkaProducer[String, String]
-    */
-
-  def setProducerProperties(): KafkaProducer[String, String] = {
-    try {
-      logger.info("Configuring Kafka Producer Properties")
-      val properties = new Properties()
-      // Adding bootstrap servers
-      properties.put("bootstrap.servers", brokers)
-      //Adding serializer for key
-      properties.put(
-        "key.serializer",
-        "org.apache.kafka.common.serialization.StringSerializer"
-      )
-      //Adding serializer for value
-      properties.put(
-        "value.serializer",
-        "org.apache.kafka.common.serialization.StringSerializer"
-      )
-      // Creating a producer with provided properties
-      val producer = new KafkaProducer[String, String](properties)
-      producer
-    } catch {
-      case ex: Exception =>
-        ex.printStackTrace()
-        logger.info("Difficulty in Configuring Kafka Producer")
-        throw new Exception("Difficulty in Configuring Kafka Producer")
     }
   }
 
@@ -140,6 +109,7 @@ object ProducerScript extends App {
             key,
             inputData(key).toString
           )
+        println(key)
         println(inputData(key))
         kafkaProducer.send(record)
         sleep(3000)
