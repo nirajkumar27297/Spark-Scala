@@ -6,9 +6,13 @@ different classes to create the required session and context object if Required
 
 package Utility
 
+import java.util.Properties
+
+import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object UtilityClass {
 
@@ -39,6 +43,48 @@ object UtilityClass {
     rootLogger
   }
 
-  //TODO Implement create Context Function if required
+  def runPythonCommand(
+      filepath: String,
+      inputDataFrame: DataFrame
+  ): RDD[String] = {
+    val command = "python3 " + filepath
+    // creating rdd with the input files,repartitioning the rdd and passing the command using pipe
+
+    val predictedPriceRDD =
+      inputDataFrame.rdd
+        .repartition(1)
+        .pipe(command)
+    predictedPriceRDD
+  }
+
+  /**
+    * The function sets the Kafka Producer Properties and return a kafka producer
+    * @return producer KafkaProducer[String, String]
+    */
+
+  def createKafkaProducer(brokers: String): KafkaProducer[String, String] = {
+    try {
+      val properties = new Properties()
+      // Adding bootstrap servers
+      properties.put("bootstrap.servers", brokers)
+      //Adding serializer for key
+      properties.put(
+        "key.serializer",
+        "org.apache.kafka.common.serialization.StringSerializer"
+      )
+      //Adding serializer for value
+      properties.put(
+        "value.serializer",
+        "org.apache.kafka.common.serialization.StringSerializer"
+      )
+      // Creating a producer with provided properties
+      val producer = new KafkaProducer[String, String](properties)
+      producer
+    } catch {
+      case ex: Exception =>
+        ex.printStackTrace()
+        throw new Exception("Difficulty in Configuring Kafka Producer")
+    }
+  }
 
 }
