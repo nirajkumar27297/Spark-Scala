@@ -1,9 +1,8 @@
-import Producer.ProducerScript.brokers
 import SparkStructuredStreaming.StockPredictionKafkaStructuredStreaming
-import Utility.UtilityClass
-import Utility.UtilityClass.createKafkaProducer
+import UtilityPackage.Utility
+import UtilityPackage.Utility.createKafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.functions.{col, from_json}
 import org.apache.spark.sql.types.{
   DoubleType,
@@ -11,24 +10,78 @@ import org.apache.spark.sql.types.{
   StructField,
   StructType
 }
-import org.scalatest.FunSuite
-class StockPredictionKafkaStructuredStreamingTest extends FunSuite {
-  val brokers = "localhost:9092"
-  val topics = "kafkatutorial"
+import org.scalatest.{BeforeAndAfterEach, FunSuite}
+class StockPredictionKafkaStructuredStreamingTest
+    extends FunSuite
+    with BeforeAndAfterEach {
+
+  @transient var structuredStreamingObj
+      : StockPredictionKafkaStructuredStreaming = _
+
+  @transient var inputDataFrame: DataFrame = _
+
   val filePath = "./src/test/resources/GOOG.csv"
-  val pythonFilePath = "./pythonFiles/StockPricePrediction.py"
-  val sparkSessionObj = UtilityClass.createSessionObject("Stock Price Test")
+
+  val sparkSessionObj = Utility.createSessionObject("Stock Price Test")
   sparkSessionObj.sparkContext.setLogLevel("ERROR")
-  val structuredStreamingObj =
-    new StockPredictionKafkaStructuredStreaming(sparkSessionObj)
+
+  var brokers = ""
+  var topics = ""
+  val wrongPythonFilePath = "./pythonFiles/StockPricePredisction.py"
+  val pythonFilePath = "./pythonFiles/StockPricePrediction.py"
   val command = "python3 ./pythonFiles/StockPricePrediction.py"
-  // creating rdd with the input files,repartitioning the rdd and passing the command using pipe
-  val inputDataFrame = sparkSessionObj.read
-    .option("header", true)
-    .option("inferSchema", true)
-    .csv(filePath)
-    .drop("Date", "Close", "Adj Close")
   val frameTest = new FrameComparison()
+  val invalidJsonString =
+    """{"1. open":"1616.7500","2. high":"1616.7500","3. low":"1616.7500","4. close":"1616.7500"}"""
+  val jsonString =
+    """{"1. open":"1616.7500","2. high":"1616.7500","3. low":"1616.7500","4. close":"1616.7500","5. volume":"229"}"""
+  import sparkSessionObj.implicits._
+  val inputDataFrameFromJson = sparkSessionObj.sparkContext
+    .makeRDD(Seq(jsonString))
+    .toDF("value")
+
+  override def beforeEach() {
+    structuredStreamingObj = new StockPredictionKafkaStructuredStreaming(
+      sparkSessionObj
+    )
+
+    inputDataFrame = sparkSessionObj.read
+      .option("header", true)
+      .option("inferSchema", true)
+      .csv(filePath)
+      .drop("Date", "Close", "Adj Close")
+    brokers = "localhost:9092"
+    topics = "test"
+  }
+
+  def generatingDataFrameFromString(): DataFrame = {
+
+    val schema = new StructType()
+      .add("1. open", StringType, true)
+      .add("2. high", StringType, true)
+      .add("3. low", StringType, true)
+      .add("4. close", StringType, true)
+      .add("5. volume", StringType, true)
+    val columnsRenamedDataFrame = inputDataFrameFromJson
+      .select(
+        from_json(col("value").cast("string"), schema)
+          .as("jsonData")
+      )
+      .selectExpr("jsonData.*")
+      .withColumnRenamed("1. open", "Open")
+      .withColumnRenamed("2. high", "High")
+      .withColumnRenamed("3. low", "Low")
+      .withColumnRenamed("4. close", "Close")
+      .withColumnRenamed("5. volume", "Volume")
+
+    val castedDataFrame = columnsRenamedDataFrame.select(
+      col("Open").cast(DoubleType),
+      col("High").cast(DoubleType),
+      col("Low").cast(DoubleType),
+      col("Volume").cast(DoubleType)
+    )
+    castedDataFrame
+  }
 
   test(
     "test_InputStockPriceDataFrame_MatchTwoDataFrames_OneCalculatedOtherFromFunction_AssertsTrue"
@@ -66,47 +119,17 @@ class StockPredictionKafkaStructuredStreamingTest extends FunSuite {
     assert(
       frameTest.frameComparison(
         predictedStockPriceDataFrameTest,
-        predictedStockPriceDataFrameTest
+        predictedStockPriceDataFrame
       )
     )
   }
   test(
-    "test_KafkaInputTest_MatchTwoDataFrames_OneCalculatedOtherFromFunction_ThrowException"
+    "test_preProcessingTest_MatchTwoDataFrames_OneCalculatedOtherFromFunction_AssertsTrue"
   ) {
-    val jsonString =
-      """{"1. open":"1616.7500","2. high":"1616.7500","3. low":"1616.7500","4. close":"1616.7500","5. volume":"229"}"""
 
-    import sparkSessionObj.implicits._
-    val inputDataFrame = sparkSessionObj.sparkContext
-      .makeRDD(Seq(jsonString))
-      .toDF("value")
-    val schema = new StructType()
-      .add("1. open", StringType, true)
-      .add("2. high", StringType, true)
-      .add("3. low", StringType, true)
-      .add("4. close", StringType, true)
-      .add("5. volume", StringType, true)
-    val columnsRenamedDataFrame = inputDataFrame
-      .select(
-        from_json(col("value").cast("string"), schema)
-          .as("jsonData")
-      )
-      .selectExpr("jsonData.*")
-      .withColumnRenamed("1. open", "Open")
-      .withColumnRenamed("2. high", "High")
-      .withColumnRenamed("3. low", "Low")
-      .withColumnRenamed("4. close", "Close")
-      .withColumnRenamed("5. volume", "Volume")
-
-    val castedDataFrame = columnsRenamedDataFrame.select(
-      col("Open").cast(DoubleType),
-      col("High").cast(DoubleType),
-      col("Low").cast(DoubleType),
-      col("Volume").cast(DoubleType)
-    )
-
+    val castedDataFrame = generatingDataFrameFromString()
     val castedReturnedDataFrame =
-      structuredStreamingObj.preProcessing(inputDataFrame)
+      structuredStreamingObj.preProcessing(inputDataFrameFromJson)
 
     val frameTest = new FrameComparison()
     assert(
@@ -117,27 +140,41 @@ class StockPredictionKafkaStructuredStreamingTest extends FunSuite {
     )
   }
   test(
-    "test_JsonInput_MatchTwoDataFrames_OneCalculatedOtherFromFunction_ThrowException"
+    "test_preProcessingFunction_InvalidJsonString_ThrowException"
   ) {
-    val jsonString =
-      """{"1. open":"1616.7500","2. high":"1616.7500","3. low":"1616.7500","4. close":"1616.7500"}"""
 
-    import sparkSessionObj.implicits._
-    val inputDataFrame = sparkSessionObj.read.json(Seq(jsonString).toDS())
+    val inputDataFrame =
+      sparkSessionObj.read.json(Seq(invalidJsonString).toDS())
     val thrown = intercept[Exception] {
       structuredStreamingObj.preProcessing(inputDataFrame)
     }
     assert(
-      thrown.getMessage == "Difficulty in creating dataframe fron kafka topic message"
+      thrown.getMessage == "Difficulty in creating dataframe from kafka topic message"
+    )
+  }
+  test("test_PythonFilePathWrong_ReturnException") {
+    val thrown = intercept[Exception] {
+      structuredStreamingObj.loadingLinearRegressionModelPython(
+        inputDataFrame,
+        wrongPythonFilePath
+      )
+    }
+    assert(
+      thrown.getMessage == "Difficulty in Predicting Close Price Using Python Model"
     )
   }
 
   test(
     "test_JsonInput_MatchTwoDataFrames_OneThroughFunctionOtherThroughProducer_AssertsTrue"
   ) {
-    val jsonString =
-      """{"1. open":"1616.7500","2. high":"1616.7500","3. low":"1616.7500","4. close":"1616.7500","5. volume":"229"}"""
+
     val kafkaProducer = createKafkaProducer(brokers)
+
+    def checkDataFrames(batchDF: DataFrame): Unit = {
+      val preProcessedDF = structuredStreamingObj.preProcessing(batchDF)
+      val inputDataFrame = generatingDataFrameFromString()
+      assert(frameTest.frameComparison(inputDataFrame, preProcessedDF))
+    }
 
     val record =
       new ProducerRecord[String, String](
@@ -146,23 +183,12 @@ class StockPredictionKafkaStructuredStreamingTest extends FunSuite {
         jsonString
       )
     kafkaProducer.send(record)
-    val inputDataFrame = sparkSessionObj.readStream
-      .format("kafka")
-      .option("kafka.bootstrap.servers", brokers)
-      .option("subscribe", topics)
-      .option("startingOffsets", "earliest")
-      .load()
-    inputDataFrame.show(5)
     val functionDataFrame = structuredStreamingObj.takingInput(brokers, topics)
-    inputDataFrame.show(5)
-    println(inputDataFrame.isStreaming)
-    inputDataFrame.writeStream
-      .option("checkpointLocation", "chk-point-dir-test")
-      .start("./test/resources")
-    println(functionDataFrame.isStreaming)
+
     functionDataFrame.writeStream
-      .start("./test/resources")
-    assert(frameTest.frameComparison(inputDataFrame, functionDataFrame))
+      .foreachBatch((batchDF: DataFrame, _: Long) => checkDataFrames(batchDF))
+      .start()
+      .awaitTermination(20000)
 
   }
 

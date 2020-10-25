@@ -1,5 +1,5 @@
 package UnstrcuturedStreaming
-import Utility.UtilityClass
+import UtilityPackage.Utility
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions.{col, lit}
@@ -17,7 +17,7 @@ object StockPredictionKafkaUnstructured extends App {
   val brokers = args(0)
   val groupId = args(1)
   val topics = args(2)
-  val spark = UtilityClass.createSessionObject("Real Time Stock Prediction")
+  val spark = Utility.createSessionObject("Real Time Stock Prediction")
   val sparkContextObj = spark.sparkContext
   val ssc = new StreamingContext(sparkContextObj, Seconds(3))
   sparkContextObj.setLogLevel("OFF")
