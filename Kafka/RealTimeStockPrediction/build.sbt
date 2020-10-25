@@ -43,4 +43,5 @@ libraryDependencies += "io.spray" %% "spray-json" % "1.3.5"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.1" % "test"
+scapegoatVersion in ThisBuild := "1.3.8"
 coverageEnabled := true

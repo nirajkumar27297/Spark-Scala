@@ -69,20 +69,13 @@ class StockPredictionKafkaStructuredStreaming(
     */
   def takingInput(brokers: String, topics: String): DataFrame = {
     logger.info("Taking Input From Kafka Topic")
-    try {
-      val inputDataFrame = sparkSessionObj.readStream
-        .format("kafka")
-        .option("kafka.bootstrap.servers", brokers)
-        .option("subscribe", topics)
-        .option("startingOffsets", "earliest")
-        .load()
-      inputDataFrame
-    } catch {
-      case ex: Exception =>
-        ex.printStackTrace()
-        logger.info("Difficulty in taking Input")
-        throw new Exception("Difficulty in taking Input")
-    }
+    val inputDataFrame = sparkSessionObj.readStream
+      .format("kafka")
+      .option("kafka.bootstrap.servers", brokers)
+      .option("subscribe", topics)
+      .option("startingOffsets", "earliest")
+      .load()
+    inputDataFrame
   }
 
   /**

@@ -46,14 +46,20 @@ object Utility {
       filepath: String,
       inputDataFrame: DataFrame
   ): RDD[String] = {
-    val command = "python3" + " " + filepath
-    // creating rdd with the input files,repartitioning the rdd and passing the command using pipe
+    try {
+      val command = "python3" + " " + filepath
+      // creating rdd with the input files,repartitioning the rdd and passing the command using pipe
 
-    val predictedPriceRDD =
-      inputDataFrame.rdd
-        .repartition(1)
-        .pipe(command)
-    predictedPriceRDD
+      val predictedPriceRDD =
+        inputDataFrame.rdd
+          .repartition(1)
+          .pipe(command)
+      predictedPriceRDD
+    } catch {
+      case ex: Exception =>
+        ex.printStackTrace()
+        throw new Exception("Error in running python command")
+    }
   }
 
   /**
