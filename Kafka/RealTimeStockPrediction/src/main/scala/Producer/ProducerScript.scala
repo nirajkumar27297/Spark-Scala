@@ -7,9 +7,8 @@
   *
   */
 package Producer
-import java.util.Properties
 
-import Utility.UtilityClass.createKafkaProducer
+import UtilityPackage.Utility.createKafkaProducer
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
@@ -122,4 +121,5 @@ object ProducerScript extends App {
         throw new Exception("Difficulty in sending Producer records")
     }
   }
+
 }

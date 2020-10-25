@@ -1,9 +1,8 @@
-import Producer.ProducerScript.brokers
 import SparkStructuredStreaming.StockPredictionKafkaStructuredStreaming
-import Utility.UtilityClass
-import Utility.UtilityClass.createKafkaProducer
+import UtilityPackage.Utility
+import UtilityPackage.Utility.createKafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.functions.{col, from_json}
 import org.apache.spark.sql.types.{
   DoubleType,
@@ -17,7 +16,7 @@ class StockPredictionKafkaStructuredStreamingTest extends FunSuite {
   val topics = "kafkatutorial"
   val filePath = "./src/test/resources/GOOG.csv"
   val pythonFilePath = "./pythonFiles/StockPricePrediction.py"
-  val sparkSessionObj = UtilityClass.createSessionObject("Stock Price Test")
+  val sparkSessionObj = Utility.createSessionObject("Stock Price Test")
   sparkSessionObj.sparkContext.setLogLevel("ERROR")
   val structuredStreamingObj =
     new StockPredictionKafkaStructuredStreaming(sparkSessionObj)
@@ -128,7 +127,7 @@ class StockPredictionKafkaStructuredStreamingTest extends FunSuite {
       structuredStreamingObj.preProcessing(inputDataFrame)
     }
     assert(
-      thrown.getMessage == "Difficulty in creating dataframe fron kafka topic message"
+      thrown.getMessage == "Difficulty in creating dataframe from kafka topic message"
     )
   }
 
@@ -139,6 +138,13 @@ class StockPredictionKafkaStructuredStreamingTest extends FunSuite {
       """{"1. open":"1616.7500","2. high":"1616.7500","3. low":"1616.7500","4. close":"1616.7500","5. volume":"229"}"""
     val kafkaProducer = createKafkaProducer(brokers)
 
+    def checkDataFrames(batchDF: DataFrame) = {
+      val preProcessedDF = structuredStreamingObj.preProcessing(batchDF)
+      batchDF.show(5)
+      //assert(frameTest.frameComparison(inputDataFrame, functionDataFrame))
+
+    }
+
     val record =
       new ProducerRecord[String, String](
         topics,
@@ -146,23 +152,25 @@ class StockPredictionKafkaStructuredStreamingTest extends FunSuite {
         jsonString
       )
     kafkaProducer.send(record)
+    println(record)
+
     val inputDataFrame = sparkSessionObj.readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", brokers)
       .option("subscribe", topics)
       .option("startingOffsets", "earliest")
       .load()
-    inputDataFrame.show(5)
+
     val functionDataFrame = structuredStreamingObj.takingInput(brokers, topics)
-    inputDataFrame.show(5)
-    println(inputDataFrame.isStreaming)
-    inputDataFrame.writeStream
-      .option("checkpointLocation", "chk-point-dir-test")
-      .start("./test/resources")
+
     println(functionDataFrame.isStreaming)
+    kafkaProducer.close()
     functionDataFrame.writeStream
-      .start("./test/resources")
-    assert(frameTest.frameComparison(inputDataFrame, functionDataFrame))
+      .format("console")
+      .foreachBatch((batchDF: DataFrame, _: Long) => checkDataFrames(batchDF))
+      .option("checkpointLocation", "chk-point-dir-test")
+      .start()
+      .awaitTermination()
 
   }
 

@@ -16,7 +16,7 @@
   */
 
 package SparkStructuredStreaming
-import Utility.UtilityClass
+import UtilityPackage.Utility
 import org.apache.log4j.Logger
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
@@ -42,10 +42,11 @@ import org.apache.spark.sql.types.{
   */
 object StockPredictionKafkaStructuredStreaming extends App {
   val sparkSessionObj =
-    UtilityClass.createSessionObject("Real Time Stock Prediction")
+    Utility.createSessionObject("Real Time Stock Prediction")
   val structuredStreamingObj = new StockPredictionKafkaStructuredStreaming(
     sparkSessionObj
   )
+
   val streamedDataFrame = structuredStreamingObj.takingInput(args(0), args(1))
   val preprocessedDataFrame =
     structuredStreamingObj.preProcessing(streamedDataFrame)
@@ -60,7 +61,7 @@ class StockPredictionKafkaStructuredStreaming(
     sparkSessionObj: SparkSession
 ) {
   //Configuring log4j
-  @transient lazy val logger: Logger = Logger.getLogger(getClass.getName)
+  lazy val logger: Logger = Logger.getLogger(getClass.getName)
 
   /**
     * The objective the function to take input from kafka source and return dataframe
@@ -69,7 +70,6 @@ class StockPredictionKafkaStructuredStreaming(
   def takingInput(brokers: String, topics: String): DataFrame = {
     logger.info("Taking Input From Kafka Topic")
     try {
-
       val inputDataFrame = sparkSessionObj.readStream
         .format("kafka")
         .option("kafka.bootstrap.servers", brokers)
@@ -126,9 +126,9 @@ class StockPredictionKafkaStructuredStreaming(
     } catch {
       case ex: Exception =>
         ex.printStackTrace()
-        logger.info("Difficulty in creating dataframe fron kafka topic message")
+        logger.info("Difficulty in creating dataframe from kafka topic message")
         throw new Exception(
-          "Difficulty in creating dataframe fron kafka topic message"
+          "Difficulty in creating dataframe from kafka topic message"
         )
     }
   }
@@ -201,29 +201,33 @@ class StockPredictionKafkaStructuredStreaming(
       inputDataFrame: DataFrame,
       pythonFilePath: String
   ): DataFrame = {
+
+    logger.info("Predicting Close Price Using Python Model")
     try {
-      logger.info("Predicting Close Price Using Python Model")
-      val predictedPriceRDD =
-        UtilityClass.runPythonCommand(pythonFilePath, inputDataFrame)
-      //Collecting the result from the output RDD and converting it to Double
-      val predictedPrice =
-        predictedPriceRDD.collect().toList.map(elements => elements.toDouble)
-      //Creating a new dataframe with new predicted value Column
-      val predictedStockPriceDataFrame = sparkSessionObj.createDataFrame(
-        // Adding New Column
-        inputDataFrame.rdd.zipWithIndex.map {
-          case (row, columnIndex) =>
-            Row.fromSeq(row.toSeq :+ predictedPrice(columnIndex.toInt))
-        },
-        // Create schema
-        StructType(
-          inputDataFrame.schema.fields :+ StructField(
-            "Predicted Close Price",
-            DoubleType,
-            false
+      var predictedStockPriceDataFrame = sparkSessionObj.emptyDataFrame
+      if (!inputDataFrame.isEmpty) {
+        val predictedPriceRDD =
+          Utility.runPythonCommand(pythonFilePath, inputDataFrame)
+        //Collecting the result from the output RDD and converting it to Double
+        val predictedPrice =
+          predictedPriceRDD.collect().toList.map(elements => elements.toDouble)
+        //Creating a new dataframe with new predicted value Column
+        predictedStockPriceDataFrame = sparkSessionObj.createDataFrame(
+          // Adding New Column
+          inputDataFrame.rdd.zipWithIndex.map {
+            case (row, columnIndex) =>
+              Row.fromSeq(row.toSeq :+ predictedPrice(columnIndex.toInt))
+          },
+          // Create schema
+          StructType(
+            inputDataFrame.schema.fields :+ StructField(
+              "Predicted Close Price",
+              DoubleType,
+              false
+            )
           )
         )
-      )
+      }
       predictedStockPriceDataFrame
     } catch {
       case ex: Exception =>
@@ -250,7 +254,7 @@ class StockPredictionKafkaStructuredStreaming(
         inputDataFrame,
         pythonFilePath
       )
-      if (predictedClosePriceDataFrame.isEmpty == false) {
+      if (!predictedClosePriceDataFrame.isEmpty) {
         predictedClosePriceDataFrame.printSchema()
         predictedClosePriceDataFrame.show()
         logger.info(
@@ -265,8 +269,6 @@ class StockPredictionKafkaStructuredStreaming(
           )
       }
     } catch {
-      case _: ArrayIndexOutOfBoundsException =>
-        println("Provide the path argument")
       case ex: Exception =>
         ex.printStackTrace()
         logger.info(
