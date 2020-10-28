@@ -1,32 +1,29 @@
-import SparkStructuredStreaming.StockPredictionKafkaStructuredStreaming
+import SparkStructuredStreaming.{
+  PythonHandler,
+  StockPredictionKafkaStructuredStreaming
+}
 import UtilityPackage.Utility
 import UtilityPackage.Utility.createKafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.spark.sql.{DataFrame, Row}
-import org.apache.spark.sql.functions.{col, from_json}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
+import org.apache.spark.sql.functions.{col, from_json, lit}
 import org.apache.spark.sql.types.{
   DoubleType,
   StringType,
   StructField,
-  StructType
+  StructType,
+  TimestampType
 }
+import org.mockito.Mockito.{doNothing, verify, when}
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
-class StockPredictionKafkaStructuredStreamingTest
-    extends FunSuite
-    with BeforeAndAfterEach {
-
-  @transient var structuredStreamingObj
-      : StockPredictionKafkaStructuredStreaming = _
-
-  @transient var inputDataFrame: DataFrame = _
+import org.scalatestplus.mockito.MockitoSugar.mock
+class StockPredictionKafkaStructuredStreamingTest extends FunSuite {
 
   val filePath = "./src/test/resources/GOOG.csv"
 
   val sparkSessionObj = Utility.createSessionObject("Stock Price Test")
   sparkSessionObj.sparkContext.setLogLevel("ERROR")
 
-  var brokers = ""
-  var topics = ""
   val wrongPythonFilePath = "./pythonFiles/StockPricePredisction.py"
   val pythonFilePath = "./pythonFiles/StockPricePrediction.py"
   val command = "python3 ./pythonFiles/StockPricePrediction.py"
@@ -39,20 +36,22 @@ class StockPredictionKafkaStructuredStreamingTest
   val inputDataFrameFromJson = sparkSessionObj.sparkContext
     .makeRDD(Seq(jsonString))
     .toDF("value")
+    .withColumn("key", lit("2020-10-27 14:27:00"))
 
-  override def beforeEach() {
-    structuredStreamingObj = new StockPredictionKafkaStructuredStreaming(
-      sparkSessionObj
-    )
+  val pythonHandlerObj = new PythonHandler(sparkSessionObj)
+  val structuredStreamingObj = new StockPredictionKafkaStructuredStreaming(
+    sparkSessionObj,
+    pythonHandlerObj
+  )
+  val saveLocationForTest = "./SavedOutputTest"
 
-    inputDataFrame = sparkSessionObj.read
-      .option("header", true)
-      .option("inferSchema", true)
-      .csv(filePath)
-      .drop("Date", "Close", "Adj Close")
-    brokers = "localhost:9092"
-    topics = "test"
-  }
+  val inputDataFrame = sparkSessionObj.read
+    .option("header", true)
+    .option("inferSchema", true)
+    .csv(filePath)
+    .drop("Date", "Close", "Adj Close")
+  val brokers = "localhost:9092"
+  val topics = "test"
 
   def generatingDataFrameFromString(): DataFrame = {
 
@@ -62,12 +61,14 @@ class StockPredictionKafkaStructuredStreamingTest
       .add("3. low", StringType, true)
       .add("4. close", StringType, true)
       .add("5. volume", StringType, true)
+    inputDataFrameFromJson.show(5)
     val columnsRenamedDataFrame = inputDataFrameFromJson
       .select(
         from_json(col("value").cast("string"), schema)
-          .as("jsonData")
+          .as("jsonData"),
+        col("key").cast("string")
       )
-      .selectExpr("jsonData.*")
+      .selectExpr("jsonData.*", "key")
       .withColumnRenamed("1. open", "Open")
       .withColumnRenamed("2. high", "High")
       .withColumnRenamed("3. low", "Low")
@@ -78,8 +79,11 @@ class StockPredictionKafkaStructuredStreamingTest
       col("Open").cast(DoubleType),
       col("High").cast(DoubleType),
       col("Low").cast(DoubleType),
-      col("Volume").cast(DoubleType)
+      col("Volume").cast(DoubleType),
+      col("Close").cast(DoubleType),
+      col("key").cast(TimestampType).as("Date")
     )
+    castedDataFrame.show(5)
     castedDataFrame
   }
 
@@ -111,7 +115,7 @@ class StockPredictionKafkaStructuredStreamingTest
       )
     )
     val predictedStockPriceDataFrameTest =
-      structuredStreamingObj.loadingLinearRegressionModelPython(
+      pythonHandlerObj.loadingLinearRegressionModelPython(
         inputDataFrame,
         pythonFilePath
       )
@@ -123,6 +127,7 @@ class StockPredictionKafkaStructuredStreamingTest
       )
     )
   }
+
   test(
     "test_preProcessingTest_MatchTwoDataFrames_OneCalculatedOtherFromFunction_AssertsTrue"
   ) {
@@ -139,6 +144,7 @@ class StockPredictionKafkaStructuredStreamingTest
       )
     )
   }
+
   test(
     "test_preProcessingFunction_InvalidJsonString_ThrowException"
   ) {
@@ -154,7 +160,7 @@ class StockPredictionKafkaStructuredStreamingTest
   }
   test("test_PythonFilePathWrong_ReturnException") {
     val thrown = intercept[Exception] {
-      structuredStreamingObj.loadingLinearRegressionModelPython(
+      pythonHandlerObj.loadingLinearRegressionModelPython(
         inputDataFrame,
         wrongPythonFilePath
       )
@@ -190,6 +196,54 @@ class StockPredictionKafkaStructuredStreamingTest
       .start()
       .awaitTermination(20000)
 
+  }
+
+  test(
+    "test_loadingLinearRegressionModelPythonFunctionCallVerifying_WhenPredictingPriceFunctionIsCalled_Verified"
+  ) {
+    val pythonHandlerService = mock[PythonHandler]
+    val returnedDataFrame = pythonHandlerObj.loadingLinearRegressionModelPython(
+      inputDataFrame,
+      pythonFilePath
+    )
+    val structuredStreamMockObj =
+      new StockPredictionKafkaStructuredStreaming(
+        sparkSessionObj,
+        pythonHandlerService
+      )
+    when(
+      pythonHandlerService.loadingLinearRegressionModelPython(
+        inputDataFrame,
+        pythonFilePath
+      )
+    ).thenReturn(returnedDataFrame)
+    structuredStreamMockObj.predictingPrice(
+      inputDataFrame,
+      saveLocationForTest,
+      pythonFilePath
+    )
+    verify(pythonHandlerService)
+      .loadingLinearRegressionModelPython(
+        inputDataFrame,
+        pythonFilePath
+      )
+  }
+
+  test(
+    "test_InputEmptyFilePathToSaveToPredictingPriceFunction_ReturnException"
+  ) {
+
+    val thrown = intercept[Exception] {
+      structuredStreamingObj.predictingPrice(
+        inputDataFrame,
+        pythonFilePath,
+        " "
+      )
+
+    }
+    assert(
+      thrown.getMessage == "Difficulty in Saving the predicted Price in the following path"
+    )
   }
 
 }
