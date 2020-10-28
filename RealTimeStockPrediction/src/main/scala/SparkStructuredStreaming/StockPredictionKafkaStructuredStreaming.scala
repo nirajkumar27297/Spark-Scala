@@ -41,11 +41,15 @@ import org.apache.spark.sql.types.{
   * 7> predictingPrice
   * 8> writeToOutputStream
   */
+
 object StockPredictionKafkaStructuredStreaming extends App {
   val sparkSessionObj =
     Utility.createSessionObject("Real Time Stock Prediction")
+
+  val pythonHandlerObj = new PythonHandler(sparkSessionObj)
   val structuredStreamingObj = new StockPredictionKafkaStructuredStreaming(
-    sparkSessionObj
+    sparkSessionObj,
+    pythonHandlerObj
   )
 
   val streamedDataFrame = structuredStreamingObj.takingInput(args(0), args(1))
@@ -59,7 +63,8 @@ object StockPredictionKafkaStructuredStreaming extends App {
 }
 
 class StockPredictionKafkaStructuredStreaming(
-    sparkSessionObj: SparkSession
+    sparkSessionObj: SparkSession,
+    pythonHandler: PythonHandler
 ) {
   //Configuring log4j
   lazy val logger: Logger = Logger.getLogger(getClass.getName)
@@ -188,58 +193,6 @@ class StockPredictionKafkaStructuredStreaming(
   }
 
   /**
-    * The objective of the function is to pipe the python machine learning algorithm for the
-    * given input dataframe and predict the Close Price
-    * @param inputDataFrame [DataFrame]
-    * @return predictedStockPriceDataFrame [DataFrame]
-    */
-
-  def loadingLinearRegressionModelPython(
-      inputDataFrame: DataFrame,
-      pythonFilePath: String
-  ): DataFrame = {
-
-    logger.info("Predicting Close Price Using Python Model")
-    try {
-      var predictedStockPriceDataFrame = sparkSessionObj.emptyDataFrame
-      if (!inputDataFrame.isEmpty) {
-        val predictedPriceRDD =
-          Utility.runPythonCommand(
-            pythonFilePath,
-            inputDataFrame.drop("Close", "Date")
-          )
-        //Collecting the result from the output RDD and converting it to Double
-        val predictedPrice =
-          predictedPriceRDD.collect().toList.map(elements => elements.toDouble)
-        //Creating a new dataframe with new predicted value Column
-        predictedStockPriceDataFrame = sparkSessionObj.createDataFrame(
-          // Adding New Column
-          inputDataFrame.rdd.zipWithIndex.map {
-            case (row, columnIndex) =>
-              Row.fromSeq(row.toSeq :+ predictedPrice(columnIndex.toInt))
-          },
-          // Create schema
-          StructType(
-            inputDataFrame.schema.fields :+ StructField(
-              "Predicted Close Price",
-              DoubleType,
-              false
-            )
-          )
-        )
-      }
-      predictedStockPriceDataFrame
-    } catch {
-      case ex: Exception =>
-        ex.printStackTrace()
-        logger.info("Difficulty in Predicting Close Price Using Python Model")
-        throw new Exception(
-          "Difficulty in Predicting Close Price Using Python Model"
-        )
-    }
-  }
-
-  /**
     * The function takes dataframe as input and call loadingLinearRegressionModelPython function to predict
     * the output and save the output as csv file in the provided path
     * @param inputDataFrame [DataFrame]
@@ -250,10 +203,13 @@ class StockPredictionKafkaStructuredStreaming(
       pythonFilePath: String
   ): Unit = {
     try {
-      val predictedClosePriceDataFrame = loadingLinearRegressionModelPython(
-        inputDataFrame,
-        pythonFilePath
-      )
+
+      val predictedClosePriceDataFrame =
+        pythonHandler.loadingLinearRegressionModelPython(
+          inputDataFrame,
+          pythonFilePath
+        )
+
       if (!predictedClosePriceDataFrame.isEmpty) {
         predictedClosePriceDataFrame.printSchema()
         predictedClosePriceDataFrame.show()
@@ -296,7 +252,11 @@ class StockPredictionKafkaStructuredStreaming(
       val query = inputDataFrame.writeStream
         .foreachBatch { (batchDataFrame: DataFrame, batchID: Long) =>
           println("Running for the batch " + batchID)
-          predictingPrice(batchDataFrame, pathToSave, pythonFilePath)
+          predictingPrice(
+            batchDataFrame,
+            pathToSave,
+            pythonFilePath
+          )
         }
         .queryName("Real Time Stock Prediction Query")
         .option("checkpointLocation", "chk-point-dir")
