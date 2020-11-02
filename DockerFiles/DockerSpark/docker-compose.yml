@@ -1,12 +1,11 @@
-version: '3'
-
+version: "3"
 services:
   zookeeper:
-    image: 'bitnami/zookeeper:latest'
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
     ports:
-      - '2181:2181'
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
+    - 2181:2181
+
   kafka:
     image: wurstmeister/kafka
     container_name: kafka
@@ -15,16 +14,13 @@ services:
     environment:
       KAFKA_ADVERTISED_HOST_NAME: localhost
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-    depends_on:
-    - zookeeper
-   
-  
+      KAFKA_CREATE_TOPICS: "kafkatutorial:1:1"
+      
   spark:
    build:
     dockerfile: DockerFileSpark
     context: .
-   depends_on:
-    - kafka
+   
    environment:
       - SPARK_MODE=master
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
@@ -33,7 +29,10 @@ services:
       - SPARK_SSL_ENABLED=no
    ports:
       - '8080:8080'
-      
+   links:
+    - kafka
    
-   
-
+   depends_on:
+    - zookeeper
+    - kafka
+    
