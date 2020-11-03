@@ -1,8 +1,49 @@
-version: '2'
-
+version: "3"
 services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+    - 2181:2181
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    ports:
+    - 9092:9092
+    
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_LISTENERS: PLAINTEXT://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: "kafkatutorial:1:1"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      SSL: kafka:9092
+    expose:
+     - 9092
+      
   spark:
    build:
-    dockerfile: DockerFile
+    dockerfile: DockerFileSpark
     context: .
 
+   
+   environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+   
+   ports:
+      - '8080:8080'
+   entrypoint:
+    - /bin/sh
+    - ./DockerScript.sh
+   
+   depends_on:
+    - zookeeper
+    - kafka
+    
