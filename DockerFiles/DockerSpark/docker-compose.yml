@@ -13,13 +13,14 @@ services:
     - 9092:9092
     
     environment:
+      KAFKA_ADVERTISED_HOST_NAME: localhost
       KAFKA_LISTENERS: PLAINTEXT://:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: "kafkatutorial:1:1"
       ALLOW_PLAINTEXT_LISTENER: "yes"
-      SSL: localhost:9092
+      SSL: kafka:9092
     expose:
      - 9092
       
@@ -38,8 +39,9 @@ services:
    
    ports:
       - '8080:8080'
-   links:
-    - kafka
+   entrypoint:
+    - /bin/sh
+    - ./DockerScript.sh
    
    depends_on:
     - zookeeper
