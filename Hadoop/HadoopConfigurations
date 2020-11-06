@@ -69,11 +69,24 @@ Ex:-
 
 It also includes properties like:-
 
-a>dfs.blocksize - It is used to specify the size of block in bytes.Default Value is 128MB(134217728 Bytes)
+a> dfs.blocksize => It is used to specify the size of block in bytes.Default Value is 128MB(134217728 Bytes)
 	<property>
 		<name>dfs.blocksize</name>
 		<value>134217728</value>
 	</property>
+
+b> dfs.client.read.shortcircuit => It reads bypass the DataNode, allowing a client to read the file directly, as long as the client is co-located with the data. Short-circuit reads provide a 		  substantial performance boost to many applications and help improve HBase random read profile and Impala performance.
+	<property>
+	    <name>dfs.client.read.shortcircuit</name>
+	    <value>true</value>
+	</property>
+c> dfs.namenode.http-address => On what ip address and port number name node services is running. 
+	Default for Hadoop 3 => 0.0.0.0:9870
+		    Hadoop 2 => 0.0.0.0:50070	
+d> dfs.datanode.http-address => On what ip address and port number data node services is running.
+	Default for Hadoop 3 => 0.0.0.0:9864
+		    Hadoop 2 => 0.0.0.0:50075
+
 	
  
 
