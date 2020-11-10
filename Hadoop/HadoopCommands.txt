@@ -1,0 +1,120 @@
+HDFS Commands -
+
+1> start-dfs.sh => To start hdfs services
+
+2> start-yarn.sh => To start the yarn services
+
+3> ls => to list the contents of a directory
+	ex:- hdfs dfs -ls
+
+4> mkdir => To create a directory
+	ex:- hdfs dfs -mkdir output
+	
+5> touchz => To create an empty fille
+	ex:- hdfs dfs -touchz example.txt
+	
+6> copyFromLocal => To copy from local file system to hdfs file system
+	ex:- hdfs dfs -copyFromLocal example.txt output/
+
+7> put => To put file from lcoal file system to hdfs file system	
+	ex:- hdfs dfs -put example.txt output/
+
+8> cat => To see the contents of a file
+	ex:- hdfs dfs -cat output/example.txt
+
+9> copyToLocal => To copy the contents from hdfs storage to local file storage
+	ex:- hdfs dfs -copyToLocal output/example.txt .
+
+10> cp => To copy file from one hdfs location to another hdfs location
+	ex:- hdfs dfs -cp output/example.txt outputNew/
+
+11> mv => To move file from one  hdfs location to another hdfs location
+	ex:- hdfs dfs -mv output/example2.txt outputNew/
+
+12> du => To get the disk usage i.e.memory occupied with each and every file 
+	ex:- hdfs dfs -du output
+
+13> dus => To get the disk usage along with the size of total files.
+	ex:- hdfs dfs -dus output
+	
+14> test => to test some conditions. [0 for true and 1 for false]
+	options :-
+		1> To test whether it is a directory or not
+			ex:- hdfs dfs -test -d output | echo $?
+		
+		2> To test whether the destination is exists or not
+			ex:- hdfs dfs -test -e output | echo $?
+			
+		3> To test whether the input is file or not
+			ex:- hdfs dfs -test -f output/example.txt | echo $?
+		
+		4> To test whether the given file is 0 bytes or not
+			ex:- hdfs dfs -test -z output/example.txt | echo $?
+			
+15> moveFromLocal => To move contents form local file system to hdfs file system
+	ex:- hdfs dfs -moveFromLocal example.txt output/
+
+16> getMerge => To merge the contents of multiple hdfs files to single file in local file system
+	ex:- hdfs dfs -getMerge -nl output/example1.txt output/example2.txt ~/Desktop/mergeResult.txt
+
+17> appendToFile => appeending files from local file system to a single file in hdfs file system.
+	ex:- hdfs dfs -appendToFile example1.txt example2.txt output/example3.txt
+
+18> checksum => To verify the integrity of a file i.e. we will get hash values of a file
+	ex:- hdfs dfs -checksum example.txt
+
+19> fsck => It is used to check the file system healthiness
+	ex:- hdfs dfs -fsck output/
+
+20> count => It gives total files,total directories and total size
+	ex:- hdfs dfs -count output/
+
+21> rm => to remove files from destination 
+	ex:- hdfs dfs -rm output/example.txt
+
+22> chgrp -> To change the goup name
+	ex:- hdfs dfs -chgrp niraj output/example.txt
+
+23> stat -> to get the statistics of a file
+	- To get the size of file in bytes
+		ex:- hdfs dfs -stat %b output/example.txt
+	
+	- To get the groupname of a file
+		ex:- hdfs dfs -stat %g output/example.txt
+	
+	- To get the username of a file
+		ex:- hdfs dfs -stat %u output/example.txt
+	
+	- To get the last modified name of the file
+		ex:- hdfs dfs -stat %y output/example.txt
+	
+24> usage => how to make use of a command i.e. syntax of a command
+	ex:- hdfs dfs -usage mkdir
+
+25> help => To get detailed description of a command
+	ex:- hdfs dfs -help cat
+
+26>  head => To display first  1 kb  contents of a data	
+		ex:- head dfs -head output/data.csv
+
+27>  tail => To display last  1 kb  contents of a data	
+		ex:- head dfs -tail output/data.csv
+		
+28> expunge => To delete files in trash
+	ex:- hdfs dfs -expunge
+
+29> chown => To change the ownership of a file
+	ex:- hdfs dfs -chown niraj:niraj output/example.txt
+
+30> chmod => to change the permissions for a file or directory
+	ex:- hdfs dfs -chmod 777 output/
+
+31> setrep => To change the replication factor
+	ex:- hdfs dfs -setrep 3 output/example.txt
+
+32> truncate => To reduce the file size
+		w=> determines the size of a file in bytes
+	ex:- hdfs dfs -truncate -w 100 output/example.txt
+
+
+

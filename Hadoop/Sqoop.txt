@@ -1,0 +1,68 @@
+Sqoop
+
+
+Importing a data-
+sqoop import --connect jdbc:mysql://localhost/myDB --bindir $SQOOP_HOME/lib/ --username niraj --P --table student --m 1 --target-dir output/student  
+
+
+Exporting a data-
+sqoop export --connect jdbc:mysql://localhost/myDB --bindir $SQOOP_HOME/lib/ --username --table studentNew --m 1 --export-dir output/student --P
+
+Exporting as Avro File-
+
+sqoop export --connect jdbc:mysql://localhost/myDB --bindir $SQOOP_HOME/lib/ --username --table studentNew --m 1 --export-dir output/studentAvro --as-avrodatafile --P
+
+
+Exporting as Sequence File-
+
+sqoop export --connect jdbc:mysql://localhost/myDB --bindir $SQOOP_HOME/lib/ --username --table studentNew --m 1 --export-dir output/studentSequence --as-sequencefile --P
+
+
+Exporting as Paraquet File-
+sqoop export --connect jdbc:mysql://localhost/myDB --bindir $SQOOP_HOME/lib/ --username --table studentNew --m 1 --export-dir output/studentParaquet --as-paraquetfile --P
+
+
+Default Compression gz-
+sqoop import --connect jdbc:mysql://localhost/myDB --bindir $SQOOP_HOME/lib/ --username niraj --password password --table student --m 1 --target-dir output/student --compress 
+
+Deflate Compression
+sqoop import --connect jdbc:mysql://localhost/myDB --bindir $SQOOP_HOME/lib/ --username niraj --password password --table student --m 1 --target-dir output/student --compress --compression-codec deflate  
+
+bzip2 Compression
+sqoop import --connect jdbc:mysql://localhost/myDB --bindir $SQOOP_HOME/lib/ --username niraj --password password --table student --m 1 --target-dir output/student --compress --compression-codec bzip2
+
+
+Conditional Imports-
+Where Clause - 
+sqoop import --connect jdbc:mysql://localhost/myDB --bindir $SQOOP_HOME/lib/ --username niraj --password password --table student --m 1 --target-dir output/studentWhere --where  " name='Niraj' ";
+
+Specific Columns -
+sqoop import --connect jdbc:mysql://localhost/myDB --bindir $SQOOP_HOME/lib/ --username niraj --password password --table student --m 1 --target-dir output/studentColumns --columns  "name";
+
+query - 
+sqoop import --connect jdbc:mysql://localhost/myDB --bindir $SQOOP_HOME/lib/ --username niraj --password password --m 1 --target-dir output/studentColumns --query  "select * from cust where id > 2 and \$CONDITIONS";
+
+splitBy
+sqoop import --connect jdbc:mysql://localhost/myDB --bindir $SQOOP_HOME/lib/ --username niraj --P --table student  --target-dir output/student  --split-by "id";
+
+boundaryQuery-
+sqoop import --connect jdbc:mysql://localhost/myDB --bindir $SQOOP_HOME/lib/ --username niraj --P --table student  --boundary-query 'select min(id),max(id) from student' --target-dir output/student  --split-by "id";
+
+incrementalAppend-
+sqoop import --connect jdbc:mysql://localhost/myDB --bindir $SQOOP_HOME/lib/ --username niraj --P --table student --check-column id --last-value 10 --m 1 --target-dir output/student/delta
+
+list-databases
+sqoop list-databases --connect jdbc:mysql://localhost/  --username niraj --P 
+
+list-tables
+sqoop list-tables --connect jdbc:mysql://localhost/myDB  --username niraj --P 
+
+eval
+sqoop eval --connect jdbc:mysql://localhost/myDB  --username niraj --P --query "describe student"
+
+
+Connecting hive to mysql Using Sqoop
+hive-common-0.10.0.jar is a must
+
+
+sqoop import --connect jdbc:mysql://localhost/myDB  --username niraj --P --bindir $SQOOP_HOME/lib/ --table student --create-hive-table --hive-database newDB --hive-table student --m 1

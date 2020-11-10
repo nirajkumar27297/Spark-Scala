@@ -1,0 +1,136 @@
+Hive
+
+CREATE USER 'hive'@'%' IDENTIFIED BY 'Niraj123@';
+
+GRANT ALL PRIVILEGES ON *.* TO 'hiveuser'@'%' WITH GRANT OPTION; 
+
+
+source home/niraj/apache-hive-3.1.2-bin/scripts/metastore/upgrade/mysql/hive-schema-3.1.0.mysql.sql
+
+
+Creating a database-
+create database myDB;
+
+Internal/ManagedTable
+create table student(name string,rollno int,dept string)
+     row format delimited
+     fields terminated by ',';
+
+
+Loading Data from Local File System-
+load data local inpath '/home/niraj/Documents/inputFile.csv'  into table student;
+
+Loading Data from HDFS FIle System-
+
+load data inpath 'output/inputFile.csv'  into table student;
+
+create external table newStudentExternal(name string,rollno int,dept string)
+    row format delimited
+    fields terminated by ','
+    location '/hiveDataExternal';
+	
+	
+ Static Partitioning
+   load data local inpath '/home/niraj/Documents/inputFile2.csv' into table student
+           partition(state="Karnataka",city="Mysore");
+
+
+set hive.exec.dynamic,partition=true
+set hive.exec.dynamic,partition,mode=strict
+		   
+   
+Dynamic Partitioning-
+
+
+
+
+Bucketing-
+create table studentTable(name string,rollno int,per float)
+clustered by (rollno) into 5 buckets
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+   
+Join Operations-
+	Full Outer Join
+	
+	select id,name,sal,sex,dname,dloc,dept.dno,emp.dno from emp full outer join dept  on emp.dno = dept.dno
+	
+	Inner Join-
+	
+	select id,name,sal,sex,dname,dloc,dept.dno,emp.dno from emp  join dept  on emp.dno = dept.dno
+	
+	Left Outer Join
+	
+	select id,name,sal,sex,dname,dloc,dept.dno,emp.dno from emp  left outer join dept  on emp.dno = dept.dno
+	
+	Right Outer Join
+	
+	select id,name,sal,sex,dname,dloc,dept.dno,emp.dno from emp  right outer join dept  on emp.dno = dept.dno
+	
+
+Using if Statement-
+select if(dept is  null,'Not Assigned',dept) from student;
+
+Map Side Join =>
+set hive.auto.convert.join=true;
+set hive.auto.convert.join.noconditionaltask=true;
+set hive.auto.convert.join.noconditionaltask.size=20971520
+set hive.auto.convert.join.use.nonstaged=true;
+set hive.mapjoin.smalltable.filesize = 30000000;
+select /*+ MAPJOIN(dept) */ id,name,sal,sex,dname,dloc,dept.dno,emp.dno  from emp,dept  where emp.dno = dept.dno
+
+
+
+Bucket Map Join =>
+set hive.optimize.bucketmapjoin = true
+set hive.enforce.bucketing=true
+
+create table student(name string,rollno int,deptID int)
+clustered by (deptID) into 4 buckets
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+create table dept(deptName string,deptID int)
+clustered by (deptID) into 4 buckets
+row format delimited
+fields terminated by ','
+
+select /*+ MAPJOIN(dept) */ student.*,dept.deptName   from student,dept  where student.deptID = dept.deptID
+
+Skew Join-
+hive.optimize.skewjoin=true;
+set hive.skewjoin.key=100000;
+
+
+
+
+
+Sort Merge Bucket Join -
+set hive.auto.convert.sortmerge.join=true;
+set hive.optimize.bucketmapjoin = true;
+set hive.optimize.bucketmapjoin.sortedmerge = true;
+set hive.auto.convert.sortmerge.join.noconditionaltask=true;
+set hive.auto.convert.sortmerge.join.bigtable.selection.policy=org.apache.hadoop.hive.ql.optimizer.AvgPartitionSizeBasedBigTableSelectorForAutoSM
+
+
+create table student(name string,rollno int,deptID int)
+clustered by (deptID) sorted by (deptID) into 4 buckets
+row format delimited
+fields terminated by ','
+stored as textfile;
+
+create table dept(deptName string,deptID int)
+clustered by (deptID) sorted by (deptID) into 4 buckets
+row format delimited
+fields terminated by ','
+
+	
+	
+	
+   
+   
+
+

@@ -1,0 +1,145 @@
+Flume-
+Flume is a open source software used for ingestion of unstructured data to HDFS/Hbase.
+
+Events-
+An event is the basic unit of the data transported using flime.
+
+Source-
+It is a component which extracts the unstructured data aka "events" from one or more applications/clients.
+
+Channel-
+The channel is a buffer between the source and the sink.The buffer's properties are based on the type of channel used i.e. memory channel,file channel or JDBC channel.
+
+Sink-
+The sink is the final dump of the data extracted or the destination of the source events.Typically,we use HDFS here but other options are also available such as Hbase,Hive etc.
+
+
+Difference between Flume And Kafka-
+
+- Flume is a push Model while Kafka is a pull model.
+- Flume is used to ingest data in Hadoop while kafka is a distribted streaming platform.
+- Data Ingestion is carried out in Flume and Kafka is used to send the message and recieve messages.
+
+
+We have different configuration files for different sources and sinks.
+
+1>Source is Netcat and Sink is logger [flume-conf-netcat.properties]
+	na.sources = nas1
+	na.channels = nac1
+	na.sinks = nal1
+
+	# For each one of the sources, the type is defined
+	na.sources.nas1.type = netcat
+	na.sources.nas1.bind = localhost
+	na.sources.nas1.port = 9999
+
+	# The channel can be defined as follows.
+	na.channels.nac1.type = memory
+
+	# Each sink's type must be defined
+	na.sinks.nal1.type = logger
+
+	#Specify the channel the sink should use
+	#agent.sinks.loggerSink.channel = memoryChannel
+
+	# Each channel's type is defined.
+	#agent.channels.memoryChannel.type = memory
+
+	# Other config values specific to each type of channel(sink or source)
+	# can be defined as well
+	# In this case, it specifies the capacity of the memory channel
+	na.channels.nac1.capacity = 100
+	na.sources.nas1.channels=nac1
+	na.sinks.nal1.channel=nac1
+	
+	To run =>  flume-ng agent -n na -f flume-conf-netcat.properties
+
+2> Source is Executor and Sink is kafka [flume-conf-kafka-properties]
+	a1.sources = r1
+	a1.channels = sample-channel
+	a1.sinks = sample
+
+	# For each one of the sources, the type is defined
+	a1.sources.r1.type = exec
+	a1.sources.r1.command = cat /home/niraj/inputFiles/Churn.csv
+	a1.sources.r1.logStdErr = true
+	a1.sinks.sample.type = logger
+	a1.channels.sample-channel.type = memory
+	a1.channels.sample-channel.capacity = 1000
+	a1.channels.sample-channel.transactionCapacity = 100
+	a1.sources.r1.channels.selector.type = replicating
+	a1.sources.r1.channels = sample-channel
+	a1.sinks.sample.type = org.apache.flume.sink.kafka.KafkaSink
+	a1.sinks.sample.topic = bigdata
+	a1.sinks.sample.brokerList = 127.0.0.1:9092
+	a1.sinks.sample.requiredAcks = 1
+	a1.sinks.sample.batchSize = 20
+	a1.sinks.sample.channel = sample-channel
+	
+	To run -=> flume-ng agent -n a1 -f flume-conf-kafka-properties
+
+3> Source is Executor and Sink is Logger [flume-conf-exec.properties]
+	ExecLoggerAgent.sources = ExecSource
+	ExecLoggerAgent.sinks = LoggerSink
+	ExecLoggerAgent.channels = MemChannel
+
+	# For each one of the sources, the type is defined
+	ExecLoggerAgent.sources.ExecSource.type = exec
+	ExecLoggerAgent.sources.ExecSource.command = cat /home/niraj/inputFiles/Churn.csv
+
+	# The channel can be defined as follows.
+	ExecLoggerAgent.channels.MemChannel.type = memory
+	ExecLoggerAgent.channels.MemChannel.capacity = 100000
+	ExecLoggerAgent.channels.MemChannel.transactionCapacity = 1000
+	ExecLoggerAgent.sinks.LoggerSink.type = logger
+
+	#Specify the channel the sink should use
+	#agent.sinks.loggerSink.channel = memoryChannel
+
+	# Each channel's type is defined.
+	#agent.channels.memoryChannel.type = memory
+
+	# Other config values specific to each type of channel(sink or source)
+	# can be defined as well
+	# In this case, it specifies the capacity of the memory channel
+
+	ExecLoggerAgent.sources.ExecSource.channels=MemChannel
+	ExecLoggerAgent.sinks.LoggerSink.channel=MemChannel
+	
+	To run => flume-ng agent -n ExecLoggerAgent -f flume-conf-exec.properties
+
+4>  Source is Sequential and Sink is Flume [flume-conf-seq.properties]
+	SeqGenAgent.sources = SeqSource
+	SeqGenAgent.sinks = HDFS
+	SeqGenAgent.channels = MemChannel
+
+	# For each one of the sources, the type is defined
+	SeqGenAgent.sources.SeqSource.type = seq
+
+	# The channel can be defined as follows.
+	SeqGenAgent.channels.MemChannel.type = memory
+	SeqGenAgent.channels.MemChannel.capacity = 1000
+	SeqGenAgent.channels.MemChannel.transactionCapacity = 100
+	#Describing/configuring the sink
+	SeqGenAgent.sinks.HDFS.type=hdfs
+	SeqGenAgent.sinks.HDFS.hdfs.path = output/Flume/
+	SeqGenAgent.sinks.HDFS.hdfs.filePrefix = niraj
+	SeqGenAgent.sinks.HDFS.hdfs.rollInterval = 0
+	SeqGenAgent.sinks.HDFS.hdfs.rollCount = 100
+	SeqGenAgent.sinks.HDFS.hdfs.fileType = DataStream
+
+	#Specify the channel the sink should use
+	#agent.sinks.loggerSink.channel = memoryChannel
+
+	# Each channel's type is defined.
+	#agent.channels.memoryChannel.type = memory
+
+	# Other config values specific to each type of channel(sink or source)
+	# can be defined as well
+	# In this case, it specifies the capacity of the memory channel
+
+	SeqGenAgent.sources.SeqSource.channels=MemChannel
+	SeqGenAgent.sinks.HDFS.channel=MemChannel
+	
+	To run => flume-ng agent -n SeqGenAgent -f flume-conf-seq.properties
+	
